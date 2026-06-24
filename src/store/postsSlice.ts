@@ -13,6 +13,7 @@ export type Post = {
   authorId: string;
   caption: string;
   imageUrl: string | null;
+  audioUrl?: string | null;
   tags: string[];
   likes: number;
   likedByUserIds: string[];

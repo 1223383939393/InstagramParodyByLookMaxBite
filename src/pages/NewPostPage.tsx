@@ -25,6 +25,8 @@ export default function NewPostPage() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
 
+  const [audioFiles, setAudioFiles] = useState<File[]>([]);
+
   const handleImageFilesChange = (files: File[]) => {
     setImageFiles(files);
 
@@ -35,6 +37,10 @@ export default function NewPostPage() {
 
     const urls = files.map((f) => URL.createObjectURL(f));
     setImagePreviewUrls(urls);
+  };
+
+  const handleAudioFilesChange = (files: File[]) => {
+    setAudioFiles(files);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -62,21 +68,29 @@ export default function NewPostPage() {
       .filter(Boolean);
 
     let finalImageUrl: string | null = null;
+    let finalAudioUrl: string | null = null;
 
     try {
       setLoading(true);
 
-      // 1) Если пользователь ввёл URL руками — используем его
+      // 1) Если есть ручной imageUrl — используем его
       if (imageUrlText.trim()) {
         finalImageUrl = imageUrlText.trim();
-      } else if (imageFiles.length) {
-        // 2) Иначе грузим файлы на бэкенд
+      }
+
+      // 2) Если есть файлы изображений и/или аудио — отправляем на /api/upload-media
+      if (!imageUrlText.trim() && (imageFiles.length || audioFiles.length)) {
         const fd = new FormData();
+
         imageFiles.forEach((file) => {
-          fd.append("files", file); // имя ключа "files" совпадает с upload.array("files")
+          fd.append("files", file);
         });
 
-        const uploadRes = await fetch(`${API_BASE}/api/upload-images`, {
+        audioFiles.forEach((file) => {
+          fd.append("audios", file);
+        });
+
+        const uploadRes = await fetch(`${API_BASE}/api/upload-media`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -87,18 +101,20 @@ export default function NewPostPage() {
         if (!uploadRes.ok) {
           const err = await uploadRes.json().catch(() => null);
           throw new Error(
-            err?.error || "Не удалось загрузить изображения"
+            err?.error || "Не удалось загрузить медиафайлы"
           );
         }
 
-        const uploadJson: { urls: string[] } = await uploadRes.json();
+        const uploadJson: { images: string[]; audios: string[] } =
+          await uploadRes.json();
 
-        if (!uploadJson.urls || !uploadJson.urls.length) {
-          throw new Error("Сервер не вернул URL картинок");
+        if (uploadJson.images && uploadJson.images.length) {
+          finalImageUrl = uploadJson.images.join("|||");
         }
 
-        // Склеиваем все урлы в одну строку — PostCard уже умеет сплитить по "|||"
-        finalImageUrl = uploadJson.urls.join("|||");
+        if (uploadJson.audios && uploadJson.audios.length) {
+          finalAudioUrl = uploadJson.audios.join("|||");
+        }
       }
 
       const res = await fetch(`${API_BASE}/api/posts`, {
@@ -110,6 +126,7 @@ export default function NewPostPage() {
         body: JSON.stringify({
           caption: caption.trim(),
           imageUrl: finalImageUrl,
+          audioUrl: finalAudioUrl,
           tags,
         }),
       });
@@ -127,6 +144,7 @@ export default function NewPostPage() {
       setTagsText("");
       setImageFiles([]);
       setImagePreviewUrls([]);
+      setAudioFiles([]);
 
       navigate("/feed");
     } catch (err: any) {
@@ -149,6 +167,7 @@ export default function NewPostPage() {
         onImageUrlChange={setImageUrlText}
         onTagsTextChange={setTagsText}
         onImageFilesChange={handleImageFilesChange}
+        onAudioFilesChange={handleAudioFilesChange}
         onSubmit={handleSubmit}
       />
     </div>

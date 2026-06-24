@@ -12,6 +12,7 @@ type NewPostFormProps = {
   onImageUrlChange: (v: string) => void;
   onTagsTextChange: (v: string) => void;
   onImageFilesChange: (files: File[]) => void;
+  onAudioFilesChange: (files: File[]) => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 };
 
@@ -26,13 +27,21 @@ export default function NewPostForm({
   onImageUrlChange,
   onTagsTextChange,
   onImageFilesChange,
+  onAudioFilesChange,
   onSubmit,
 }: NewPostFormProps) {
-  const handleFilesChange = (
+  const handleImageFilesChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const files = Array.from(e.target.files || []);
     onImageFilesChange(files);
+  };
+
+  const handleAudioFilesChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = Array.from(e.target.files || []);
+    onAudioFilesChange(files);
   };
 
   return (
@@ -53,7 +62,8 @@ export default function NewPostForm({
           onChange={(e) => onImageUrlChange(e.target.value)}
         />
 
-        <div style={{ margin: "8px 0" }}>
+        {/* Кнопка добавления картинок */}
+        <div style={{ margin: "8px 0", display: "flex", gap: 8 }}>
           <label
             style={{
               display: "inline-flex",
@@ -68,17 +78,43 @@ export default function NewPostForm({
               cursor: "pointer",
             }}
           >
-            <span>📎 Добавить файл(ы)</span>
+            <span>🖼 Добавить фото</span>
             <input
               type="file"
               accept="image/*"
               multiple
               style={{ display: "none" }}
-              onChange={handleFilesChange}
+              onChange={handleImageFilesChange}
+            />
+          </label>
+
+          {/* Кнопка добавления аудио */}
+          <label
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "6px 12px",
+              borderRadius: 999,
+              border: "1px dashed #4b5563",
+              backgroundColor: "#020617",
+              color: "#e5e7eb",
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            <span>🎧 Добавить аудио</span>
+            <input
+              type="file"
+              accept="audio/*"
+              multiple
+              style={{ display: "none" }}
+              onChange={handleAudioFilesChange}
             />
           </label>
         </div>
 
+        {/* Превью картинок */}
         {imagePreviewUrls.length > 0 && (
           <div
             style={{

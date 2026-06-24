@@ -51,13 +51,21 @@ export default function PostCard({ post }: Props) {
       const updatedPost: Post = await res.json();
       dispatch(updatePostFromServer(updatedPost));
     } catch {
-      // для учебного проекта можно молча игнорировать
+      // тихо игнорируем
     }
   };
 
   // массив ссылок на картинки
   const imageUrls: string[] = post.imageUrl
     ? post.imageUrl
+        .split("|||")
+        .map((u) => u.trim())
+        .filter(Boolean)
+    : [];
+
+  // массив ссылок на аудио
+  const audioUrls: string[] = post.audioUrl
+    ? post.audioUrl
         .split("|||")
         .map((u) => u.trim())
         .filter(Boolean)
@@ -177,7 +185,7 @@ export default function PostCard({ post }: Props) {
               height: "100%",
               maxHeight: 500,
               display: "block",
-              objectFit: "contain", // ничего не режем
+              objectFit: "contain",
               backgroundColor: "#020617",
             }}
           />
@@ -274,6 +282,76 @@ export default function PostCard({ post }: Props) {
     );
   };
 
+  const renderAudio = () => {
+    if (!audioUrls.length) return null;
+
+    return (
+      <div
+        className="post-card__audio"
+        style={{
+          marginTop: 10,
+          padding: 8,
+          borderRadius: 12,
+          backgroundColor: "#020617",
+          border: "1px solid #1f2937",
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+        }}
+      >
+        {/* основной плеер — первый трек */}
+        <audio
+          controls
+          src={audioUrls[0]}
+          style={{ width: "100%" }}
+        >
+          Ваш браузер не поддерживает аудио.
+        </audio>
+
+        {/* список треков, если их несколько */}
+        {audioUrls.length > 1 && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
+              fontSize: 12,
+              color: "#9ca3af",
+            }}
+          >
+            {audioUrls.map((url, idx) => (
+              <div
+                key={url}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <span>🎵</span>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    color: "#e5e7eb",
+                    textDecoration: "underline",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    maxWidth: "100%",
+                  }}
+                >
+                  Трек {idx + 1}
+                </a>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <article className="post-card">
       <header
@@ -309,6 +387,8 @@ export default function PostCard({ post }: Props) {
       </header>
 
       {renderImages()}
+
+      {renderAudio()}
 
       <div
         className="post-card__body"
