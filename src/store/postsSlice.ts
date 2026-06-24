@@ -21,29 +21,37 @@ export type Post = {
   comments: Comment[];
 };
 
+export type SortBy = "new" | "top";
+
 export type PostsState = {
   items: Post[];
+  search: string;
+  tagFilter: string | null;
+  sortBy: SortBy;
 };
 
 const initialState: PostsState = {
   items: [],
+  search: "",
+  tagFilter: null,
+  sortBy: "new",
 };
 
 const postsSlice = createSlice({
   name: "posts",
   initialState,
   reducers: {
-    // Полная замена списка постов с сервера (используется в FeedPage)
+    // посты с сервера (лента)
     setPostsFromServer(state, action: PayloadAction<Post[]>) {
       state.items = action.payload;
     },
 
-    // Добавить один пост, который пришёл с сервера после создания (используется в NewPostPage)
+    // добавление одного поста (созданного на сервере)
     addPostFromServer(state, action: PayloadAction<Post>) {
       state.items.unshift(action.payload);
     },
 
-    // Обновить пост, пришедший с сервера (например, после лайка/редактирования)
+    // обновление поста (например, лайки/редактирование)
     updatePostFromServer(state, action: PayloadAction<Post>) {
       const updated = action.payload;
       const index = state.items.findIndex((p) => p.id === updated.id);
@@ -52,7 +60,6 @@ const postsSlice = createSlice({
       }
     },
 
-    // Добавить комментарий к посту
     addCommentToPost(
       state,
       action: PayloadAction<{ postId: string; comment: Comment }>
@@ -64,10 +71,22 @@ const postsSlice = createSlice({
       }
     },
 
-    // Удалить пост по id
     removePost(state, action: PayloadAction<string>) {
       const postId = action.payload;
       state.items = state.items.filter((p) => p.id !== postId);
+    },
+
+    // --- фильтры и сортировка для PostFilters / PostList ---
+    setSearch(state, action: PayloadAction<string>) {
+      state.search = action.payload;
+    },
+
+    setTagFilter(state, action: PayloadAction<string | null>) {
+      state.tagFilter = action.payload;
+    },
+
+    setSortBy(state, action: PayloadAction<SortBy>) {
+      state.sortBy = action.payload;
     },
   },
 });
@@ -78,6 +97,9 @@ export const {
   updatePostFromServer,
   addCommentToPost,
   removePost,
+  setSearch,
+  setTagFilter,
+  setSortBy,
 } = postsSlice.actions;
 
 export default postsSlice.reducer;
