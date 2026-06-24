@@ -1,3 +1,4 @@
+// src/pages/ProfilePage.tsx
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "../app/store";
 import PostCard from "../components/feed/PostCard";
@@ -59,27 +60,43 @@ export default function ProfilePage() {
     setIsEditing(false);
   };
 
-  // убираем null/undefined, чтобы React не ругался на src
   const avatarSrc: string =
     !avatarError && (localAvatar ?? profile.avatarUrl ?? undefined)
       ? (localAvatar ?? profile.avatarUrl) || DEFAULT_AVATAR
       : DEFAULT_AVATAR;
 
   return (
-    <div className="page profile-page">
-      <header className="profile-header">
+    <div
+      className="page profile-page"
+      style={{
+        paddingLeft: 32,
+        paddingRight: 24,
+        paddingTop: 24,
+      }}
+    >
+      <header
+        className="profile-header"
+        style={{ display: "flex", gap: 16, marginBottom: 24 }}
+      >
         <img
           src={avatarSrc}
           alt={profile.username}
           className="profile-avatar"
           onClick={() => setIsAvatarOpen(true)}
-          style={{ cursor: "pointer" }}
+          style={{
+            cursor: "pointer",
+            width: 72,
+            height: 72,
+            borderRadius: "999px",
+            objectFit: "cover",
+            border: "1px solid #1f2937",
+          }}
           onError={() => setAvatarError(true)}
         />
         <div>
-          <h2>{profile.username}</h2>
-          <p>{profile.fullName}</p>
-          <p>{profile.bio}</p>
+          <h2 style={{ marginBottom: 4 }}>{profile.username}</h2>
+          <p style={{ marginBottom: 2 }}>{profile.fullName}</p>
+          <p style={{ marginBottom: 4, fontSize: 13 }}>{profile.bio}</p>
           <p
             style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}
           >
@@ -109,40 +126,128 @@ export default function ProfilePage() {
         <section style={{ marginBottom: 24 }}>
           <form
             onSubmit={handleProfileSubmit}
-            style={{ display: "flex", flexDirection: "column", gap: 8 }}
+            style={{ display: "flex", flexDirection: "column", gap: 10 }}
           >
-            <input
-              name="username"
-              defaultValue={profile.username ?? ""}
-              placeholder="Никнейм"
-            />
-            <input
-              name="fullName"
-              defaultValue={profile.fullName ?? ""}
-              placeholder="Полное имя"
-            />
-            <input
-              name="avatarUrl"
-              defaultValue={profile.avatarUrl ?? ""}
-              placeholder="Ссылка на аватар (можно пусто)"
-            />
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarFile}
-            />
-            <textarea
-              name="bio"
-              defaultValue={profile.bio ?? ""}
-              placeholder="О себе"
-            />
-            <button type="submit">Сохранить профиль</button>
+            <label style={{ fontSize: 13 }}>
+              Никнейм
+              <input
+                name="username"
+                defaultValue={profile.username ?? ""}
+                placeholder="Никнейм"
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                }}
+              />
+            </label>
+
+            <label style={{ fontSize: 13 }}>
+              Полное имя
+              <input
+                name="fullName"
+                defaultValue={profile.fullName ?? ""}
+                placeholder="Полное имя"
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                }}
+              />
+            </label>
+
+            <label style={{ fontSize: 13 }}>
+              Ссылка на аватар
+              <input
+                name="avatarUrl"
+                defaultValue={profile.avatarUrl ?? ""}
+                placeholder="https://…"
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                }}
+              />
+            </label>
+
+            <label style={{ fontSize: 13 }}>
+              Загрузить аватар
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarFile}
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                }}
+              />
+            </label>
+
+            <label style={{ fontSize: 13 }}>
+              О себе
+              <textarea
+                name="bio"
+                defaultValue={profile.bio ?? ""}
+                placeholder="О себе"
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 16,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                  minHeight: 60,
+                  resize: "vertical",
+                }}
+              />
+            </label>
+
+            <button
+              type="submit"
+              style={{
+                marginTop: 4,
+                padding: 8,
+                borderRadius: 999,
+                border: "none",
+                background:
+                  "linear-gradient(135deg, #6366f1, #ec4899)",
+                color: "white",
+                cursor: "pointer",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              Сохранить профиль
+            </button>
           </form>
         </section>
       )}
 
       <section className="profile-posts">
-        <h3>Посты</h3>
+        <h3 style={{ marginBottom: 12 }}>Посты</h3>
         <div className="post-list">
           {posts.map((p) => (
             <PostCard key={p.id} post={p} />

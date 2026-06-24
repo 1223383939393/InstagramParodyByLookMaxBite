@@ -1,99 +1,111 @@
-// src/store/postsSlice.ts
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import { loadPosts, savePosts } from "../utils/storage";
+import type { RootState } from "../app/store";
 
 export type Post = {
   id: string;
   authorId: string;
-  imageUrl: string;
   caption: string;
+  imageUrl?: string;           // картинка теперь опциональна
   tags: string[];
   likes: number;
-  likedByUserIds?: string[];
+  likedByUserIds: string[];
   createdAt: string;
 };
 
-type PostsState = {
+export type PostsState = {
   items: Post[];
   search: string;
-  tagFilter: string;
-  sortBy: "newest" | "likes";
+  tagFilter: string | null;
+  sortBy: "new" | "top";
 };
 
-const demoPosts: Post[] = [
-  {
-    id: "1",
-    authorId: "marat",
-    imageUrl:
-      "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=800&q=80",
-    caption: "Утренний пит-стоп",
-    tags: ["f1", "morning"],
-    likes: 128,
-    likedByUserIds: ["marat"],
-    createdAt: "2026-06-20T10:00:00Z",
-  },
-  {
-    id: "2",
-    authorId: "marat",
-    imageUrl:
-      "https://images.unsplash.com/photo-1518176258769-f227c79839a2?auto=format&fit=crop&w=800&q=80",
-    caption: "Ночная гонка",
-    tags: ["night", "racing"],
-    likes: 256,
-    likedByUserIds: ["marat"],
-    createdAt: "2026-06-21T22:30:00Z",
-  },
-];
+const POSTS_STORAGE_KEY = "lmbq_posts";
 
-const initialState: PostsState = {
-  items: loadPosts<Post[]>(demoPosts),
+function loadPosts(): PostsState | null {
+  try {
+    const raw = localStorage.getItem(POSTS_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as PostsState;
+  } catch {
+    return null;
+  }
+}
+
+function savePosts(state: PostsState) {
+  try {
+    localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // игнорируем ошибки
+  }
+}
+
+const defaultState: PostsState = {
+  items: [],
   search: "",
-  tagFilter: "all",
-  sortBy: "newest",
+  tagFilter: null,
+  sortBy: "new",
 };
+
+const initialState: PostsState = loadPosts() ?? defaultState;
 
 const postsSlice = createSlice({
   name: "posts",
   initialState,
   reducers: {
-    addPost(state, action: PayloadAction<Post>) {
-      state.items.unshift({
-        ...action.payload,
+    addPost(
+      state,
+      action: PayloadAction<{
+        id: string;
+        authorId: string;
+        caption: string;
+        imageUrl?: string;
+        tags: string[];
+      }>
+    ) {
+      const now = new Date().toISOString();
+      const newPost: Post = {
+        id: action.payload.id,
+        authorId: action.payload.authorId,
+        caption: action.payload.caption,
+        imageUrl: action.payload.imageUrl,
+        tags: action.payload.tags,
+        likes: 0,
         likedByUserIds: [],
-      });
-      savePosts(state.items);
+        createdAt: now,
+      };
+
+      state.items.unshift(newPost);
+      savePosts(state);
     },
     likePost(
       state,
       action: PayloadAction<{ postId: string; userId: string }>
     ) {
-      const post = state.items.find((p) => p.id === action.payload.postId);
+      const { postId, userId } = action.payload;
+      const post = state.items.find((p) => p.id === postId);
       if (!post) return;
 
-      const likedSet = new Set(post.likedByUserIds ?? []);
-
-      if (likedSet.has(action.payload.userId)) {
-        // уже лайкнул — убираем лайк
-        likedSet.delete(action.payload.userId);
-        post.likedByUserIds = Array.from(likedSet);
+      const alreadyLiked = post.likedByUserIds.includes(userId);
+      if (alreadyLiked) {
+        post.likedByUserIds = post.likedByUserIds.filter(
+          (id) => id !== userId
+        );
         post.likes = Math.max(0, post.likes - 1);
       } else {
-        // ставим лайк
-        likedSet.add(action.payload.userId);
-        post.likedByUserIds = Array.from(likedSet);
+        post.likedByUserIds.push(userId);
         post.likes += 1;
       }
 
-      savePosts(state.items);
+      savePosts(state);
     },
     setSearch(state, action: PayloadAction<string>) {
       state.search = action.payload;
     },
-    setTagFilter(state, action: PayloadAction<string>) {
+    setTagFilter(state, action: PayloadAction<string | null>) {
       state.tagFilter = action.payload;
     },
-    setSortBy(state, action: PayloadAction<PostsState["sortBy"]>) {
+    setSortBy(state, action: PayloadAction<"new" | "top">) {
       state.sortBy = action.payload;
     },
   },
@@ -101,5 +113,6 @@ const postsSlice = createSlice({
 
 export const { addPost, likePost, setSearch, setTagFilter, setSortBy } =
   postsSlice.actions;
-
 export default postsSlice.reducer;
+
+export const selectPosts = (state: RootState) => state.posts.items;

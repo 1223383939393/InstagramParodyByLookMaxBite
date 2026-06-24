@@ -1,5 +1,5 @@
 // src/components/layout/Sidebar.tsx
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "../../app/store";
 import { logout } from "../../store/usersSlice";
@@ -7,6 +7,7 @@ import { DEFAULT_AVATAR } from "../../constants/avatar";
 import { useState } from "react";
 
 export default function Sidebar() {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const usersState = useSelector((state: RootState) => state.users);
   const currentUser = usersState.items.find(
@@ -19,14 +20,36 @@ export default function Sidebar() {
     dispatch(logout());
   };
 
-  const avatarSrc =
+  const handleLogoClick = () => {
+    navigate("/feed");
+  };
+
+  const avatarSrc: string =
     !avatarError && currentUser?.avatarUrl
       ? currentUser.avatarUrl
       : DEFAULT_AVATAR;
 
   return (
     <aside className="sidebar">
-      <h2 className="sidebar__logo">LMBQ</h2>
+      <button
+        type="button"
+        className="sidebar__logo"
+        onClick={handleLogoClick}
+        style={{
+          background: "none",
+          border: "none",
+          padding: 0,
+          margin: 0,
+          cursor: "pointer",
+          fontSize: 24,
+          fontWeight: 700,
+          color: "#e5e7eb",            // светлый цвет текста
+          textAlign: "left",
+        }}
+      >
+        LMBQ
+      </button>
+
       <nav className="sidebar__nav">
         <NavLink to="/feed">Лента</NavLink>
         <NavLink to="/explore">Поиск</NavLink>
@@ -48,8 +71,8 @@ export default function Sidebar() {
               src={avatarSrc}
               alt={currentUser.username}
               style={{
-                width: 32,
-                height: 32,
+                width: 40,
+                height: 40,
                 borderRadius: "999px",
                 objectFit: "cover",
                 border: "1px solid #1f2937",

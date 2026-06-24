@@ -1,41 +1,85 @@
-// src/components/feed/PostFilters.tsx
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../app/store";
-import { setSearch, setTagFilter, setSortBy } from "../../store/postsSlice";
+import {
+  setSearch,
+  setTagFilter,
+  setSortBy,
+} from "../../store/postsSlice";
 
 export default function PostFilters() {
   const dispatch = useDispatch();
-  const { search, tagFilter, sortBy } = useSelector(
-    (state: RootState) => state.posts
-  );
+  const postsState = useSelector((state: RootState) => state.posts);
+  const { search, tagFilter, sortBy } = postsState;
 
   return (
-    <div className="post-filters">
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 8,
+        marginBottom: 12,
+      }}
+    >
       <input
-        placeholder="Поиск по подписям и тегам"
+        type="text"
         value={search}
         onChange={(e) => dispatch(setSearch(e.target.value))}
+        placeholder="Поиск по тексту и тегам"
+        style={{
+          flex: 1,
+          minWidth: 160,
+          padding: "6px 10px",
+          borderRadius: 999,
+          border: "1px solid #374151",
+          backgroundColor: "#020617",
+          color: "#e5e7eb",
+          fontSize: 13,
+        }}
       />
 
       <select
-        value={tagFilter}
-        onChange={(e) => dispatch(setTagFilter(e.target.value))}
+        value={tagFilter ?? ""} // null → ""
+        onChange={(e) =>
+          dispatch(
+            setTagFilter(e.target.value || null)
+          )
+        }
+        style={{
+          padding: "6px 10px",
+          borderRadius: 999,
+          border: "1px solid #374151",
+          backgroundColor: "#020617",
+          color: "#e5e7eb",
+          fontSize: 13,
+        }}
       >
-        <option value="all">Все теги</option>
-        <option value="f1">F1</option>
-        <option value="racing">racing</option>
-        <option value="night">night</option>
-        <option value="morning">morning</option>
+        <option value="">Все теги</option>
+        <option value="music">#music</option>
+        <option value="travel">#travel</option>
+        <option value="sport">#sport</option>
+        {/* при желании добавь реальные теги */}
       </select>
 
       <select
         value={sortBy}
         onChange={(e) =>
-          dispatch(setSortBy(e.target.value as "newest" | "likes"))
+          dispatch(
+            setSortBy(
+              e.target.value === "top" ? "top" : "new"
+            )
+          )
         }
+        style={{
+          padding: "6px 10px",
+          borderRadius: 999,
+          border: "1px solid #374151",
+          backgroundColor: "#020617",
+          color: "#e5e7eb",
+          fontSize: 13,
+        }}
       >
-        <option value="newest">Сначала новые</option>
-        <option value="likes">По лайкам</option>
+        <option value="new">Сначала новые</option>
+        <option value="top">По лайкам</option>
       </select>
     </div>
   );

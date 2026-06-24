@@ -1,95 +1,143 @@
 // src/pages/AuthPage.tsx
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../app/store";
-import { registerUser, loginUser } from "../store/usersSlice";
+import { loginUser, registerUser } from "../store/usersSlice";
 import { useState } from "react";
-import type { FormEvent } from "react";
 
 export default function AuthPage() {
   const dispatch = useDispatch();
-  const users = useSelector((state: RootState) => state.users.items);
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const usersState = useSelector((state: RootState) => state.users);
 
-  const handleLogin = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const username = formData.get("username")?.toString() ?? "";
-    const password = formData.get("password")?.toString() ?? "";
-    dispatch(loginUser({ username, password }));
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [registerUsername, setRegisterUsername] = useState("");
+  const [registerFullName, setRegisterFullName] = useState("");
+  const [registerAvatarUrl, setRegisterAvatarUrl] = useState("");
+  const [registerBio, setRegisterBio] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  const MIN_PASSWORD_LENGTH = 6;
+
+  const validatePassword = (password: string) => {
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      return `Пароль должен быть не короче ${MIN_PASSWORD_LENGTH} символов`;
+    }
+    return null;
   };
 
-  const handleSignup = (e: FormEvent<HTMLFormElement>) => {
+  const handleLoginSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const username = formData.get("username")?.toString() ?? "";
-    const password = formData.get("password")?.toString() ?? "";
-    const fullName = formData.get("fullName")?.toString() ?? username;
-    const avatarUrl =
-      formData.get("avatarUrl")?.toString() ??
-      "https://images.unsplash.com/photo-1502767089025-6572583495b4";
-    const bio = formData.get("bio")?.toString() ?? "";
+    const error = validatePassword(loginPassword);
+    setPasswordError(error);
+    if (error) return;
+
+    dispatch(
+      loginUser({ username: loginUsername.trim(), password: loginPassword })
+    );
+  };
+
+  const handleRegisterSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const error = validatePassword(registerPassword);
+    setPasswordError(error);
+    if (error) return;
 
     const newUser = {
-      id: username,
-      username,
-      fullName,
-      avatarUrl,
-      bio,
-      password,
+      id: crypto.randomUUID(),
+      username: registerUsername.trim(),
+      fullName: registerFullName.trim(),
+      avatarUrl: registerAvatarUrl.trim() || null,
+      bio: registerBio.trim() || null,
+      password: registerPassword,
     };
 
     dispatch(registerUser(newUser));
-    dispatch(loginUser({ username, password }));
+    dispatch(
+      loginUser({ username: newUser.username, password: newUser.password })
+    );
   };
 
   return (
     <div
       className="page"
       style={{
-        minHeight: "100vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        minHeight: "100vh",
       }}
     >
       <div
         style={{
-          backgroundColor: "#0b1220",
+          width: "100%",
+          maxWidth: 420,
           padding: 24,
           borderRadius: 16,
           border: "1px solid #1f2937",
-          width: 360,
+          background:
+            "radial-gradient(circle at top, rgba(96,165,250,0.3), transparent 60%)",
         }}
       >
-        <div style={{ display: "flex", marginBottom: 16 }}>
+        <h1 style={{ marginBottom: 8 }}>LMBQ</h1>
+        <p
+          style={{
+            marginBottom: 16,
+            fontSize: 13,
+            color: "#9ca3af",
+          }}
+        >
+          Авторизуйся, чтобы пользоваться социальной сетью LMBQ.
+        </p>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            marginBottom: 16,
+          }}
+        >
           <button
             type="button"
-            onClick={() => setMode("login")}
+            onClick={() => {
+              setMode("login");
+              setPasswordError(null);
+            }}
             style={{
               flex: 1,
               padding: 8,
               borderRadius: 999,
               border: "none",
               background:
-                mode === "login" ? "#6366f1" : "#020617",
+                mode === "login"
+                  ? "linear-gradient(135deg, #6366f1, #ec4899)"
+                  : "#111827",
               color: "white",
               cursor: "pointer",
+              fontSize: 13,
             }}
           >
             Вход
           </button>
           <button
             type="button"
-            onClick={() => setMode("signup")}
+            onClick={() => {
+              setMode("register");
+              setPasswordError(null);
+            }}
             style={{
               flex: 1,
               padding: 8,
               borderRadius: 999,
               border: "none",
               background:
-                mode === "signup" ? "#6366f1" : "#020617",
+                mode === "register"
+                  ? "linear-gradient(135deg, #6366f1, #ec4899)"
+                  : "#111827",
               color: "white",
               cursor: "pointer",
+              fontSize: 13,
             }}
           >
             Регистрация
@@ -98,52 +146,219 @@ export default function AuthPage() {
 
         {mode === "login" ? (
           <form
-            onSubmit={handleLogin}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
+            onSubmit={handleLoginSubmit}
+            style={{ display: "flex", flexDirection: "column", gap: 10 }}
           >
-            <h1 style={{ margin: "0 0 8px 0" }}>Вход в LMBQ</h1>
-            <input name="username" placeholder="Никнейм" />
-            <input
-              name="password"
-              placeholder="Пароль"
-              type="password"
-            />
-            <button type="submit">Войти</button>
-            <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 8 }}>
-              Уже есть пользователи LMBQ:{" "}
-              {users.map((u) => u.username).join(", ") || "пока нет"}
-            </p>
+            <label style={{ fontSize: 13 }}>
+              Логин
+              <input
+                type="text"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                placeholder="Введите логин"
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                }}
+                required
+              />
+            </label>
+
+            <label style={{ fontSize: 13 }}>
+              Пароль
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder={`Мин. ${MIN_PASSWORD_LENGTH} символов`}
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                }}
+                required
+              />
+            </label>
+
+            {passwordError && (
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "#f97316",
+                  marginTop: -2,
+                }}
+              >
+                {passwordError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              style={{
+                marginTop: 4,
+                padding: 8,
+                borderRadius: 999,
+                border: "none",
+                background:
+                  "linear-gradient(135deg, #6366f1, #ec4899)",
+                color: "white",
+                cursor: "pointer",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              Войти
+            </button>
           </form>
         ) : (
           <form
-            onSubmit={handleSignup}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
+            onSubmit={handleRegisterSubmit}
+            style={{ display: "flex", flexDirection: "column", gap: 10 }}
           >
-            <h1 style={{ margin: "0 0 8px 0" }}>Регистрация в LMBQ</h1>
-            <input name="username" placeholder="Никнейм (уникальный id)" />
-            <input name="fullName" placeholder="Полное имя" />
-            <input
-              name="avatarUrl"
-              placeholder="Ссылка на аватар (можно пусто)"
-            />
-            <textarea
-              name="bio"
-              placeholder="О себе"
-            />
-            <input
-              name="password"
-              placeholder="Пароль"
-              type="password"
-            />
-            <button type="submit">Создать аккаунт</button>
+            <label style={{ fontSize: 13 }}>
+              Логин
+              <input
+                type="text"
+                value={registerUsername}
+                onChange={(e) => setRegisterUsername(e.target.value)}
+                placeholder="Придумайте логин"
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                }}
+                required
+              />
+            </label>
+
+            <label style={{ fontSize: 13 }}>
+              Полное имя
+              <input
+                type="text"
+                value={registerFullName}
+                onChange={(e) => setRegisterFullName(e.target.value)}
+                placeholder="Как вас зовут"
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                }}
+                required
+              />
+            </label>
+
+            <label style={{ fontSize: 13 }}>
+              Ссылка на аватар (опционально)
+              <input
+                type="url"
+                value={registerAvatarUrl}
+                onChange={(e) => setRegisterAvatarUrl(e.target.value)}
+                placeholder="https://…"
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                }}
+              />
+            </label>
+
+            <label style={{ fontSize: 13 }}>
+              О себе (опционально)
+              <textarea
+                value={registerBio}
+                onChange={(e) => setRegisterBio(e.target.value)}
+                placeholder="Расскажите о себе"
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 16,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                  minHeight: 60,
+                  resize: "vertical",
+                }}
+              />
+            </label>
+
+            <label style={{ fontSize: 13 }}>
+              Пароль
+              <input
+                type="password"
+                value={registerPassword}
+                onChange={(e) => setRegisterPassword(e.target.value)}
+                placeholder={`Мин. ${MIN_PASSWORD_LENGTH} символов`}
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                }}
+                required
+              />
+            </label>
+
+            {passwordError && (
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "#f97316",
+                  marginTop: -2,
+                }}
+              >
+                {passwordError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              style={{
+                marginTop: 4,
+                padding: 8,
+                borderRadius: 999,
+                border: "none",
+                background:
+                  "linear-gradient(135deg, #6366f1, #ec4899)",
+                color: "white",
+                cursor: "pointer",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              Зарегистрироваться
+            </button>
           </form>
         )}
       </div>

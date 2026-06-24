@@ -1,39 +1,44 @@
-// src/components/feed/PostList.tsx
 import { useSelector } from "react-redux";
 import type { RootState } from "../../app/store";
 import PostCard from "./PostCard";
-import PostModal from "./PostModal";
 import { useState } from "react";
+import PostModal from "./PostModal";
 
 export default function PostList() {
-  const { items, search, tagFilter, sortBy } = useSelector(
-    (state: RootState) => state.posts
-  );
-  const [selectedPostId, setSelectedPostId] = useState<string | null>(
-    null
-  );
+  const postsState = useSelector((state: RootState) => state.posts);
+  const { items, search, tagFilter, sortBy } = postsState;
 
-  const filtered = [...items]
-    .filter((p) =>
-      search
-        ? p.caption.toLowerCase().includes(search.toLowerCase()) ||
-          p.tags.some((t: string) =>
-            t.toLowerCase().includes(search.toLowerCase())
-          )
-        : true
-    )
-    .filter((p) =>
-      tagFilter === "all" ? true : p.tags.includes(tagFilter)
-    )
-    .sort((a, b) => {
-      if (sortBy === "likes") return b.likes - a.likes;
-      return (
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+
+  let filtered = items.filter((post) => {
+    const matchesSearch =
+      !search ||
+      post.caption.toLowerCase().includes(search.toLowerCase()) ||
+      post.tags.some((t) =>
+        t.toLowerCase().includes(search.toLowerCase())
       );
-    });
+
+    const matchesTag =
+      tagFilter ? post.tags.includes(tagFilter) : true;
+
+    return matchesSearch && matchesTag;
+  });
+
+  if (sortBy === "top") {
+    filtered = [...filtered].sort((a, b) => b.likes - a.likes);
+  } else {
+    // "new" — сортировка по дате, новые сверху
+    filtered = [...filtered].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() -
+        new Date(a.createdAt).getTime()
+    );
+  }
 
   const selectedPost =
-    filtered.find((p) => p.id === selectedPostId) ?? null;
+    selectedPostId != null
+      ? filtered.find((p) => p.id === selectedPostId) ?? null
+      : null;
 
   return (
     <>
@@ -42,7 +47,6 @@ export default function PostList() {
           <div
             key={post.id}
             onClick={() => setSelectedPostId(post.id)}
-            style={{ cursor: "pointer" }}
           >
             <PostCard post={post} />
           </div>
