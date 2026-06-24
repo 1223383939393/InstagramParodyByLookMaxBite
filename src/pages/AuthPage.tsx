@@ -56,6 +56,14 @@ async function apiLogin(payload: {
   return res.json();
 }
 
+const MIN_PASSWORD_LENGTH = 6;
+
+const isValidEmail = (email: string) => {
+  if (!email) return false;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
 export default function AuthPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -73,8 +81,6 @@ export default function AuthPage() {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const MIN_PASSWORD_LENGTH = 6;
-
   const validatePassword = (password: string) => {
     if (password.length < MIN_PASSWORD_LENGTH) {
       return `Пароль должен быть не короче ${MIN_PASSWORD_LENGTH} символов`;
@@ -88,9 +94,9 @@ export default function AuthPage() {
     e.preventDefault();
     setGlobalError(null);
 
-    const error = validatePassword(loginPassword);
-    setPasswordError(error);
-    if (error) return;
+    const passErr = validatePassword(loginPassword);
+    setPasswordError(passErr);
+    if (passErr) return;
 
     try {
       setLoading(true);
@@ -126,17 +132,29 @@ export default function AuthPage() {
     e.preventDefault();
     setGlobalError(null);
 
-    const error = validatePassword(registerPassword);
-    setPasswordError(error);
-    if (error) return;
+    const passErr = validatePassword(registerPassword);
+    setPasswordError(passErr);
+    if (passErr) return;
+
+    const username = registerUsername.trim();
+    if (!username) {
+      setGlobalError("Логин не может быть пустым");
+      return;
+    }
+
+    const emailToUse =
+      registerEmail.trim() || `${username}@example.com`;
+
+    if (!isValidEmail(emailToUse)) {
+      setGlobalError("Введите корректный email");
+      return;
+    }
 
     try {
       setLoading(true);
       const result = await apiRegister({
-        username: registerUsername.trim(),
-        email:
-          registerEmail.trim() ||
-          `${registerUsername.trim()}@example.com`,
+        username,
+        email: emailToUse,
         password: registerPassword,
         fullName:
           registerFullName.trim() || registerUsername.trim(),
@@ -167,7 +185,6 @@ export default function AuthPage() {
 
   return (
     <div className="auth-page">
-      {/* левый блок с логотипом и описанием */}
       <div className="auth-page__branding">
         <h1 className="auth-logo">PIXLY</h1>
         <p className="auth-tagline">
@@ -175,7 +192,6 @@ export default function AuthPage() {
         </p>
       </div>
 
-      {/* правая карточка с формой */}
       <div className="auth-page__card">
         <div className="auth-card-inner">
           <p className="auth-mode-toggle">

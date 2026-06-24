@@ -1,3 +1,4 @@
+// src/store/postsSlice.ts
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
@@ -29,12 +30,34 @@ export type PostsState = {
   sortBy: SortBy;
 };
 
-const initialState: PostsState = {
+const POSTS_STORAGE_KEY = "lmbq_posts";
+
+function loadPosts(): PostsState | null {
+  try {
+    const raw = localStorage.getItem(POSTS_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as PostsState;
+  } catch {
+    return null;
+  }
+}
+
+function savePosts(state: PostsState) {
+  try {
+    localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // ignore errors
+  }
+}
+
+const defaultState: PostsState = {
   items: [],
   search: "",
   tagFilter: null,
   sortBy: "new",
 };
+
+const initialState: PostsState = loadPosts() ?? defaultState;
 
 const postsSlice = createSlice({
   name: "posts",
@@ -42,10 +65,12 @@ const postsSlice = createSlice({
   reducers: {
     setPostsFromServer(state, action: PayloadAction<Post[]>) {
       state.items = action.payload;
+      savePosts(state);
     },
 
     addPostFromServer(state, action: PayloadAction<Post>) {
       state.items.unshift(action.payload);
+      savePosts(state);
     },
 
     updatePostFromServer(state, action: PayloadAction<Post>) {
@@ -53,6 +78,7 @@ const postsSlice = createSlice({
       const index = state.items.findIndex((p) => p.id === updated.id);
       if (index !== -1) {
         state.items[index] = updated;
+        savePosts(state);
       }
     },
 
@@ -64,24 +90,29 @@ const postsSlice = createSlice({
       const post = state.items.find((p) => p.id === postId);
       if (post) {
         post.comments.push(comment);
+        savePosts(state);
       }
     },
 
     removePost(state, action: PayloadAction<string>) {
       const postId = action.payload;
       state.items = state.items.filter((p) => p.id !== postId);
+      savePosts(state);
     },
 
     setSearch(state, action: PayloadAction<string>) {
       state.search = action.payload;
+      savePosts(state);
     },
 
     setTagFilter(state, action: PayloadAction<string | null>) {
       state.tagFilter = action.payload;
+      savePosts(state);
     },
 
     setSortBy(state, action: PayloadAction<SortBy>) {
       state.sortBy = action.payload;
+      savePosts(state);
     },
 
     toggleLike(
@@ -94,12 +125,16 @@ const postsSlice = createSlice({
 
       const alreadyLiked = post.likedByUserIds.includes(userId);
       if (alreadyLiked) {
-        post.likedByUserIds = post.likedByUserIds.filter((id) => id !== userId);
+        post.likedByUserIds = post.likedByUserIds.filter(
+          (id) => id !== userId
+        );
         post.likes = Math.max(0, post.likes - 1);
       } else {
         post.likedByUserIds.push(userId);
         post.likes += 1;
       }
+
+      savePosts(state);
     },
   },
 });

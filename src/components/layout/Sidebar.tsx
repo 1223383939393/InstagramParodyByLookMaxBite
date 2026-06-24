@@ -1,109 +1,62 @@
 // src/components/layout/Sidebar.tsx
 import { NavLink, useNavigate } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../app/store";
 import { logout } from "../../store/usersSlice";
 import { DEFAULT_AVATAR } from "../../constants/avatar";
-import { useState } from "react";
 
 export default function Sidebar() {
-  const navigate = useNavigate();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const usersState = useSelector((state: RootState) => state.users);
-  const currentUser = usersState.items.find(
-    (u) => u.id === usersState.currentUserId
-  );
+  const currentUser =
+    usersState.items.find((u) => u.id === usersState.currentUserId) ||
+    null;
 
-  const [avatarError, setAvatarError] = useState(false);
-
-  const handleLogout = () => {
-    dispatch(logout());
-  };
-
-  const handleLogoClick = () => {
-    navigate("/feed");
-  };
-
-  const avatarSrc: string =
-    !avatarError && currentUser?.avatarUrl
+  const avatarSrc =
+    currentUser?.avatarUrl &&
+    currentUser.avatarUrl.trim().length > 0
       ? currentUser.avatarUrl
       : DEFAULT_AVATAR;
 
+  const handleLogout = () => {
+    dispatch(logout());
+    localStorage.removeItem("lmbq_token");
+    navigate("/auth");
+  };
+
   return (
     <aside className="sidebar">
-      <button
-        type="button"
-        className="sidebar__logo"
-        onClick={handleLogoClick}
-        style={{
-          background: "none",
-          border: "none",
-          padding: 0,
-          margin: 0,
-          cursor: "pointer",
-          fontSize: 24,
-          fontWeight: 700,
-          color: "#e5e7eb",
-          textAlign: "left",
-        }}
-      >
-        LMBQ
-      </button>
-
+      <h1 className="sidebar__logo">PIXLY</h1>
       <nav className="sidebar__nav">
         <NavLink to="/feed">Лента</NavLink>
-        <NavLink to="/explore">Поиск</NavLink>
+        <NavLink to="/explore">Исследовать</NavLink>
         <NavLink to="/profile">Профиль</NavLink>
         <NavLink to="/new">Новый пост</NavLink>
       </nav>
 
       {currentUser && (
-        <div style={{ marginTop: "auto" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              marginTop: 16,
-            }}
-          >
+        <div className="sidebar__user">
+          <div className="sidebar__user-info">
             <img
               src={avatarSrc}
               alt={currentUser.username}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: "999px",
-                objectFit: "cover",
-                border: "1px solid #1f2937",
-              }}
-              onError={() => setAvatarError(true)}
+              className="sidebar__user-avatar"
             />
-            <div style={{ fontSize: 13 }}>
-              <div style={{ color: "#e5e7eb" }}>
+            <div>
+              <div className="sidebar__user-username">
                 @{currentUser.username}
               </div>
-              <div style={{ color: "#9ca3af" }}>
+              <div className="sidebar__user-fullname">
                 {currentUser.fullName}
               </div>
             </div>
           </div>
-
           <button
+            type="button"
             onClick={handleLogout}
-            style={{
-              marginTop: 10,
-              width: "100%",
-              padding: 6,
-              borderRadius: 999,
-              border: "none",
-              background:
-                "linear-gradient(135deg, #ef4444, #f97316)",
-              color: "white",
-              cursor: "pointer",
-              fontSize: 13,
-              fontWeight: 600,
-            }}
+            className="sidebar__logout-btn"
           >
             Выйти
           </button>
