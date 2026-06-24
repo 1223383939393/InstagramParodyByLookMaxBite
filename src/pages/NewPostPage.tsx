@@ -22,17 +22,13 @@ export default function NewPostPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(
-    null
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>(
+    []
   );
 
-  const handleImageFileChange = (file: File | null) => {
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setImagePreviewUrl(url);
-    } else {
-      setImagePreviewUrl(null);
-    }
+  const handleImageFilesChange = (files: File[]) => {
+    const urls = files.map((f) => URL.createObjectURL(f));
+    setImagePreviewUrls(urls);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -59,6 +55,10 @@ export default function NewPostPage() {
       .map((t) => t.trim())
       .filter(Boolean);
 
+    const finalImageUrl =
+      imageUrl.trim() ||
+      (imagePreviewUrls[0] ? imagePreviewUrls[0] : "");
+
     try {
       setLoading(true);
 
@@ -70,7 +70,7 @@ export default function NewPostPage() {
         },
         body: JSON.stringify({
           caption: caption.trim(),
-          imageUrl: imageUrl.trim() || null,
+          imageUrl: finalImageUrl || null,
           tags,
         }),
       });
@@ -86,7 +86,7 @@ export default function NewPostPage() {
       setCaption("");
       setImageUrl("");
       setTagsText("");
-      setImagePreviewUrl(null);
+      setImagePreviewUrls([]);
 
       navigate("/feed");
     } catch (err: any) {
@@ -104,11 +104,11 @@ export default function NewPostPage() {
         tagsText={tagsText}
         error={error}
         loading={loading}
-        imagePreviewUrl={imagePreviewUrl}
+        imagePreviewUrls={imagePreviewUrls}
         onCaptionChange={setCaption}
         onImageUrlChange={setImageUrl}
         onTagsTextChange={setTagsText}
-        onImageFileChange={handleImageFileChange}
+        onImageFilesChange={handleImageFilesChange}
         onSubmit={handleSubmit}
       />
     </div>

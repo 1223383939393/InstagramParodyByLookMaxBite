@@ -49,8 +49,97 @@ export default function PostCard({ post }: Props) {
       const updatedPost: Post = await res.json();
       dispatch(updatePostFromServer(updatedPost));
     } catch {
-      // тут можно показать уведомление, но для учебного проекта можно игнорировать
+      // можно показать уведомление, но для учебного проекта ок
     }
+  };
+
+  // разбор imageUrl на массив (на будущее для коллажей)
+  const imageUrls: string[] = post.imageUrl
+    ? post.imageUrl
+        .split("|||")
+        .map((u) => u.trim())
+        .filter(Boolean)
+    : [];
+
+  const renderImages = () => {
+    if (imageUrls.length === 0) return null;
+
+    // одна картинка — как раньше
+    if (imageUrls.length === 1) {
+      return (
+        <div className="post-card__image-wrapper">
+          <img
+            src={imageUrls[0]}
+            alt={post.caption}
+            className="post-card__image"
+            style={{
+              width: "100%",
+              borderRadius: 16,
+              objectFit: "cover",
+              maxHeight: 400,
+            }}
+          />
+        </div>
+      );
+    }
+
+    // 2–4 картинки — простой коллаж
+    const urls = imageUrls.slice(0, 4);
+
+    return (
+      <div
+        className="post-card__collage"
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            urls.length === 2 ? "1fr 1fr" : "1fr 1fr",
+          gridTemplateRows:
+            urls.length <= 2 ? "auto" : "150px 150px",
+          gap: 4,
+          borderRadius: 16,
+          overflow: "hidden",
+        }}
+      >
+        {urls.map((url, idx) => (
+          <div
+            key={idx}
+            style={{
+              position: "relative",
+              width: "100%",
+              height: "100%",
+              minHeight: urls.length <= 2 ? 200 : 150,
+            }}
+          >
+            <img
+              src={url}
+              alt={`${post.caption} #${idx + 1}`}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+            {idx === 3 && imageUrls.length > 4 && (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  backgroundColor: "rgba(15,23,42,0.65)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 32,
+                  color: "#e5e7eb",
+                  fontWeight: 600,
+                }}
+              >
+                +{imageUrls.length - 4}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -87,21 +176,7 @@ export default function PostCard({ post }: Props) {
         </div>
       </header>
 
-      {post.imageUrl && (
-        <div className="post-card__image-wrapper">
-          <img
-            src={post.imageUrl}
-            alt={post.caption}
-            className="post-card__image"
-            style={{
-              width: "100%",
-              borderRadius: 16,
-              objectFit: "cover",
-              maxHeight: 400,
-            }}
-          />
-        </div>
-      )}
+      {renderImages()}
 
       <div
         className="post-card__body"

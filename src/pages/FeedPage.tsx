@@ -12,14 +12,16 @@ export default function FeedPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const fetchPosts = (showLoading = true) => {
     const token = localStorage.getItem("lmbq_token");
     if (!token) {
       setError("Вы не авторизованы");
       return;
     }
 
-    setLoading(true);
+    if (showLoading) setLoading(true);
+    setError(null);
+
     fetch(`${API_BASE}/api/posts`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -39,13 +41,47 @@ export default function FeedPage() {
         setError(err.message || "Ошибка загрузки ленты");
       })
       .finally(() => {
-        setLoading(false);
+        if (showLoading) setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    // первый запрос
+    fetchPosts(true);
+
+    // автообновление каждые 15 секунд без спиннера
+    const intervalId = setInterval(() => fetchPosts(false), 15000);
+
+    return () => clearInterval(intervalId);
   }, [dispatch]);
 
   return (
     <div className="page">
-      <h1>Лента</h1>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 12,
+        }}
+      >
+        <h1>Лента</h1>
+        <button
+          type="button"
+          onClick={() => fetchPosts(true)}
+          style={{
+            padding: "4px 10px",
+            borderRadius: 999,
+            border: "1px solid #4b5563",
+            backgroundColor: "#111827",
+            color: "#e5e7eb",
+            fontSize: 12,
+            cursor: "pointer",
+          }}
+        >
+          Обновить
+        </button>
+      </div>
 
       {loading && (
         <p style={{ fontSize: 13, color: "var(--text-muted)" }}>

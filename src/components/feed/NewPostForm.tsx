@@ -1,3 +1,4 @@
+// src/components/feed/NewPostForm.tsx
 import React from "react";
 
 type NewPostFormProps = {
@@ -6,11 +7,11 @@ type NewPostFormProps = {
   tagsText: string;
   error: string | null;
   loading: boolean;
-  imagePreviewUrl: string | null;
+  imagePreviewUrls: string[];
   onCaptionChange: (v: string) => void;
   onImageUrlChange: (v: string) => void;
   onTagsTextChange: (v: string) => void;
-  onImageFileChange: (file: File | null) => void;
+  onImageFilesChange: (files: File[]) => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 };
 
@@ -20,13 +21,20 @@ export default function NewPostForm({
   tagsText,
   error,
   loading,
-  imagePreviewUrl,
+  imagePreviewUrls,
   onCaptionChange,
   onImageUrlChange,
   onTagsTextChange,
-  onImageFileChange,
+  onImageFilesChange,
   onSubmit,
 }: NewPostFormProps) {
+  const handleFilesChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = Array.from(e.target.files || []);
+    onImageFilesChange(files);
+  };
+
   return (
     <div className="new-post-form">
       <h1>Новый пост</h1>
@@ -46,27 +54,61 @@ export default function NewPostForm({
         />
 
         <div style={{ margin: "8px 0" }}>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) =>
-              onImageFileChange(e.target.files?.[0] || null)
-            }
-          />
+          <label
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "6px 12px",
+              borderRadius: 999,
+              border: "1px dashed #4b5563",
+              backgroundColor: "#020617",
+              color: "#e5e7eb",
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            <span>📎 Добавить файл(ы)</span>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: "none" }}
+              onChange={handleFilesChange}
+            />
+          </label>
         </div>
 
-        {imagePreviewUrl && (
-          <div style={{ marginBottom: 8 }}>
-            <img
-              src={imagePreviewUrl}
-              alt="Предпросмотр"
-              style={{
-                maxWidth: "100%",
-                maxHeight: 300,
-                borderRadius: 16,
-                objectFit: "cover",
-              }}
-            />
+        {imagePreviewUrls.length > 0 && (
+          <div
+            style={{
+              marginBottom: 8,
+              display: "grid",
+              gridTemplateColumns:
+                imagePreviewUrls.length === 1 ? "1fr" : "1fr 1fr",
+              gap: 6,
+            }}
+          >
+            {imagePreviewUrls.map((url, idx) => (
+              <div
+                key={idx}
+                style={{
+                  borderRadius: 16,
+                  overflow: "hidden",
+                  maxHeight: 200,
+                }}
+              >
+                <img
+                  src={url}
+                  alt={`Предпросмотр ${idx + 1}`}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              </div>
+            ))}
           </div>
         )}
 
