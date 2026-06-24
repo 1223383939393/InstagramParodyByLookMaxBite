@@ -1,4 +1,3 @@
-// src/pages/ProfilePage.tsx
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "../app/store";
 import PostCard from "../components/feed/PostCard";
@@ -51,7 +50,8 @@ export default function ProfilePage() {
       avatarUrl:
         localAvatar ??
         formData.get("avatarUrl")?.toString() ??
-        profile.avatarUrl,
+        profile.avatarUrl ??
+        null,
       password: profile.password,
     };
 
@@ -59,9 +59,10 @@ export default function ProfilePage() {
     setIsEditing(false);
   };
 
-  const avatarSrc =
-    !avatarError && (localAvatar || profile.avatarUrl)
-      ? localAvatar || profile.avatarUrl
+  // убираем null/undefined, чтобы React не ругался на src
+  const avatarSrc: string =
+    !avatarError && (localAvatar ?? profile.avatarUrl ?? undefined)
+      ? (localAvatar ?? profile.avatarUrl) || DEFAULT_AVATAR
       : DEFAULT_AVATAR;
 
   return (
@@ -112,17 +113,17 @@ export default function ProfilePage() {
           >
             <input
               name="username"
-              defaultValue={profile.username}
+              defaultValue={profile.username ?? ""}
               placeholder="Никнейм"
             />
             <input
               name="fullName"
-              defaultValue={profile.fullName}
+              defaultValue={profile.fullName ?? ""}
               placeholder="Полное имя"
             />
             <input
               name="avatarUrl"
-              defaultValue={profile.avatarUrl}
+              defaultValue={profile.avatarUrl ?? ""}
               placeholder="Ссылка на аватар (можно пусто)"
             />
             <input
@@ -132,7 +133,7 @@ export default function ProfilePage() {
             />
             <textarea
               name="bio"
-              defaultValue={profile.bio}
+              defaultValue={profile.bio ?? ""}
               placeholder="О себе"
             />
             <button type="submit">Сохранить профиль</button>
@@ -172,6 +173,7 @@ export default function ProfilePage() {
               border: "1px solid #374151",
               objectFit: "contain",
             }}
+            onError={() => setAvatarError(true)}
           />
         </div>
       )}

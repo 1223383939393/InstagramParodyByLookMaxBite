@@ -1,38 +1,49 @@
-// src/store/usersSlice.ts
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import type { ProfileFormValues } from "../schemas/profileSchema";
-import { loadUsers, saveUsers } from "../utils/storage";
 
-export type UserProfile = ProfileFormValues & {
+export type UserProfile = {
+  id: string;
+  username: string;
+  fullName: string;
+  avatarUrl?: string | null;
+  bio?: string | null;
   password: string;
 };
 
-type UsersState = {
+export type UsersState = {
   items: UserProfile[];
   currentUserId: string | null;
   isAuthenticated: boolean;
 };
 
-const demoUsers: UserProfile[] = [
-  {
-    id: "marat",
-    username: "race_master",
-    fullName: "Marat Safarov",
-    avatarUrl:
-      "https://images.unsplash.com/photo-1502767089025-6572583495b4",
-    bio: "F1, симрейсинг и код. Ищу быстрый круг.",
-    password: "test123",
-  },
-];
+const USERS_STORAGE_KEY = "lmbq_users";
 
-const initialUsers = loadUsers<UserProfile[]>(demoUsers);
+function loadUsers(): UsersState | null {
+  try {
+    const raw = localStorage.getItem(USERS_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as UsersState;
+  } catch {
+    return null;
+  }
+}
 
-const initialState: UsersState = {
-  items: initialUsers,
-  currentUserId: initialUsers[0]?.id ?? null,
-  isAuthenticated: initialUsers[0] ? true : false,
+function saveUsers(state: UsersState) {
+  try {
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // игнорируем ошибки записи
+  }
+}
+
+// Стартовое состояние: никто не залогинен, пользователей нет (или можешь сюда добавить демо‑юзера)
+const defaultState: UsersState = {
+  items: [],
+  currentUserId: null,
+  isAuthenticated: false,
 };
+
+const initialState: UsersState = loadUsers() ?? defaultState;
 
 const usersSlice = createSlice({
   name: "users",
@@ -40,31 +51,32 @@ const usersSlice = createSlice({
   reducers: {
     registerUser(state, action: PayloadAction<UserProfile>) {
       state.items.push(action.payload);
-      saveUsers(state.items);
+      saveUsers(state);
     },
     loginUser(
       state,
       action: PayloadAction<{ username: string; password: string }>
     ) {
-      const user = state.items.find(
-        (u) =>
-          u.username === action.payload.username &&
-          u.password === action.payload.password
+      const { username, password } = action.payload;
+      const found = state.items.find(
+        (u) => u.username === username && u.password === password
       );
-      if (user) {
-        state.currentUserId = user.id;
+      if (found) {
+        state.currentUserId = found.id;
         state.isAuthenticated = true;
+        saveUsers(state);
       }
     },
     logout(state) {
       state.currentUserId = null;
       state.isAuthenticated = false;
+      saveUsers(state);
     },
     updateProfile(state, action: PayloadAction<UserProfile>) {
       const idx = state.items.findIndex((u) => u.id === action.payload.id);
       if (idx !== -1) {
         state.items[idx] = action.payload;
-        saveUsers(state.items);
+        saveUsers(state);
       }
     },
   },
