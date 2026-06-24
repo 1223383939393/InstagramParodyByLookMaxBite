@@ -1,193 +1,119 @@
-import { useDispatch } from "react-redux";
+// src/components/feed/PostCard.tsx
+import { useSelector } from "react-redux";
+import type { RootState } from "../../app/store";
 import type { Post } from "../../store/postsSlice";
-import { updatePostFromServer } from "../../store/postsSlice";
+import { DEFAULT_AVATAR } from "../../constants/avatar";
+import PostComments from "./PostComments";
 
-const API_BASE = "https://lmbq-backend.onrender.com";
-
-type PostCardProps = {
+type Props = {
   post: Post;
-  onOpen?: () => void; // если у тебя есть модалка/клик по посту
 };
 
-export default function PostCard({ post, onOpen }: PostCardProps) {
-  const dispatch = useDispatch();
+export default function PostCard({ post }: Props) {
+  const usersState = useSelector((state: RootState) => state.users);
+  const author = usersState.items.find((u) => u.id === post.authorId) || null;
+  const currentUserId = usersState.currentUserId;
 
-  const handleLikeClick = async () => {
-    const token = localStorage.getItem("lmbq_token");
-    if (!token) return;
-
-    try {
-      const res = await fetch(`${API_BASE}/api/posts/${post.id}/like`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.error || "Не удалось обновить лайк");
-      }
-
-      const updatedPost: Post = await res.json();
-      dispatch(updatePostFromServer(updatedPost));
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const avatarSrc =
+    author?.avatarUrl && author.avatarUrl.trim().length > 0
+      ? author.avatarUrl
+      : DEFAULT_AVATAR;
 
   return (
-    <article
-      className="post-card"
-      style={{
-        borderRadius: 16,
-        border: "1px solid #1f2937",
-        padding: 12,
-        marginBottom: 12,
-        backgroundColor: "#020617",
-      }}
-    >
-      {/* Верх: автор и дата */}
+    <article className="post-card">
+      {/* шапка поста: автор + дата */}
       <header
+        className="post-card__header"
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          gap: 10,
           marginBottom: 8,
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: 13, fontWeight: 600 }}>
-            {post.authorId}
-          </span>
-          <span
-            style={{
-              fontSize: 11,
-              color: "#6b7280",
-            }}
-          >
+        <img
+          src={avatarSrc}
+          alt={author ? author.username : "Автор"}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: "999px",
+            objectFit: "cover",
+            border: "1px solid #1f2937",
+          }}
+        />
+        <div>
+          <div style={{ fontSize: 14, color: "#e5e7eb" }}>
+            {author ? `@${author.username}` : "Неизвестный автор"}
+          </div>
+          <div style={{ fontSize: 12, color: "#9ca3af" }}>
+            {author?.fullName}
+            {author?.fullName ? " · " : ""}
             {new Date(post.createdAt).toLocaleString()}
-          </span>
+          </div>
         </div>
-
-        {onOpen && (
-          <button
-            type="button"
-            onClick={onOpen}
-            style={{
-              fontSize: 11,
-              padding: "4px 8px",
-              borderRadius: 999,
-              border: "1px solid #374151",
-              backgroundColor: "#020617",
-              color: "#9ca3af",
-              cursor: "pointer",
-            }}
-          >
-            Открыть
-          </button>
-        )}
       </header>
 
-      {/* Картинка */}
+      {/* картинка, если есть */}
       {post.imageUrl && (
-        <div
-          style={{
-            borderRadius: 12,
-            overflow: "hidden",
-            marginBottom: 8,
-          }}
-        >
+        <div className="post-card__image-wrapper">
           <img
             src={post.imageUrl}
             alt={post.caption}
+            className="post-card__image"
             style={{
               width: "100%",
-              display: "block",
+              borderRadius: 16,
               objectFit: "cover",
-              maxHeight: 360,
+              maxHeight: 400,
             }}
           />
         </div>
       )}
 
-      {/* Подпись */}
-      <p
-        style={{
-          marginBottom: 8,
-          fontSize: 13,
-          color: "#e5e7eb",
-        }}
+      {/* текст поста */}
+      <div
+        className="post-card__body"
+        style={{ marginTop: 8, fontSize: 14, color: "#e5e7eb" }}
       >
-        {post.caption}
-      </p>
+        <p>{post.caption}</p>
 
-      {/* Теги */}
-      {post.tags.length > 0 && (
-        <div
-          style={{
-            marginBottom: 8,
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 6,
-          }}
-        >
-          {post.tags.map((tag: string) => (
-            <span
-              key={tag}
-              style={{
-                fontSize: 11,
-                padding: "2px 8px",
-                borderRadius: 999,
-                border: "1px solid #374151",
-                color: "#93c5fd",
-              }}
-            >
-              #{tag}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Низ: лайки и комменты */}
-      <footer
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginTop: 4,
-        }}
-      >
-        <button
-          type="button"
-          onClick={handleLikeClick}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 4,
-            fontSize: 12,
-            padding: "4px 8px",
-            borderRadius: 999,
-            border: "none",
-            background: "linear-gradient(135deg, #6366f1, #ec4899)",
-            color: "white",
-            cursor: "pointer",
-          }}
-        >
-          ❤️ {post.likes}
-        </button>
-
-        {post.comments.length > 0 && (
-          <span
+        {post.tags.length > 0 && (
+          <div
             style={{
-              fontSize: 11,
+              marginTop: 6,
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 6,
+              fontSize: 12,
               color: "#9ca3af",
             }}
           >
-            Комментариев: {post.comments.length}
-          </span>
+            {post.tags.map((tag) => (
+              <span key={tag}>#{tag}</span>
+            ))}
+          </div>
         )}
+      </div>
+
+      {/* лайки / статистика (минимал) */}
+      <footer
+        className="post-card__footer"
+        style={{
+          marginTop: 10,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontSize: 12,
+          color: "#9ca3af",
+        }}
+      >
+        <span>❤️ {post.likes}</span>
+        <span>💬 {post.comments.length}</span>
       </footer>
+
+      {/* комментарии */}
+      <PostComments post={post} currentUserId={currentUserId} />
     </article>
   );
 }

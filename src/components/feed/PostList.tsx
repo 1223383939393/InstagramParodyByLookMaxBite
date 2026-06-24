@@ -1,24 +1,75 @@
 // src/components/feed/PostList.tsx
 import { useSelector } from "react-redux";
 import type { RootState } from "../../app/store";
+import { useState } from "react";
 import PostCard from "./PostCard";
+import PostModal from "./PostModal";
 
 export default function PostList() {
-  const posts = useSelector((state: RootState) => state.posts.items);
+  const { items, search, tagFilter, sortBy } = useSelector(
+    (state: RootState) => state.posts
+  );
+  const [openedPostId, setOpenedPostId] = useState<string | null>(null);
+
+  // фильтрация по поиску
+  let posts = items;
+  if (search.trim()) {
+    const q = search.trim().toLowerCase();
+    posts = posts.filter((p) => {
+      const text = p.caption.toLowerCase();
+      const tagsText = p.tags.join(" ").toLowerCase();
+      return text.includes(q) || tagsText.includes(q);
+    });
+  }
+
+  // фильтр по тегу
+  if (tagFilter) {
+    posts = posts.filter((p) => p.tags.includes(tagFilter));
+  }
+
+  // сортировка
+  if (sortBy === "new") {
+    posts = [...posts].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() -
+        new Date(a.createdAt).getTime()
+    );
+  } else {
+    posts = [...posts].sort((a, b) => b.likes - a.likes);
+  }
+
+  const openedPost = openedPostId
+    ? posts.find((p) => p.id === openedPostId) || null
+    : null;
 
   if (!posts.length) {
     return (
       <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
-        Пока нет ни одного поста.
+        Посты по этим фильтрам не найдены.
       </p>
     );
   }
 
   return (
-    <div className="post-list">
-      {posts.map((p) => (
-        <PostCard key={p.id} post={p} />
-      ))}
-    </div>
+    <>
+      <div className="post-list">
+        {posts.map((p) => (
+          <div
+            key={p.id}
+            onClick={() => setOpenedPostId(p.id)}
+            style={{ cursor: "pointer" }}
+          >
+            <PostCard post={p} />
+          </div>
+        ))}
+      </div>
+
+      {openedPost && (
+        <PostModal
+          post={openedPost}
+          onClose={() => setOpenedPostId(null)}
+        />
+      )}
+    </>
   );
 }

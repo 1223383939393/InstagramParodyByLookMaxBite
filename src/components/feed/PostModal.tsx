@@ -2,12 +2,12 @@
 import type { Post } from "../../store/postsSlice";
 import PostCard from "./PostCard";
 
-type Props = {
+type PostModalProps = {
   post: Post;
   onClose: () => void;
 };
 
-export default function PostModal({ post, onClose }: Props) {
+export default function PostModal({ post, onClose }: PostModalProps) {
   return (
     <div
       style={{
@@ -23,9 +23,12 @@ export default function PostModal({ post, onClose }: Props) {
     >
       <div
         style={{
-          maxWidth: 800,
-          width: "90%",
+          maxWidth: "min(900px, 95vw)",
           maxHeight: "90vh",
+          width: "100%",
+          backgroundColor: "#020617",
+          borderRadius: 16,
+          border: "1px solid #1f2937",
           overflowY: "auto",
         }}
         onClick={(e) => e.stopPropagation()}
