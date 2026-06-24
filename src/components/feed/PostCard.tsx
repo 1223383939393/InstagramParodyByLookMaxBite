@@ -1,5 +1,6 @@
 // src/components/feed/PostCard.tsx
 import { useDispatch, useSelector } from "react-redux";
+import { useState } from "react";
 import type { RootState } from "../../app/store";
 import type { Post } from "../../store/postsSlice";
 import { DEFAULT_AVATAR } from "../../constants/avatar";
@@ -50,11 +51,11 @@ export default function PostCard({ post }: Props) {
       const updatedPost: Post = await res.json();
       dispatch(updatePostFromServer(updatedPost));
     } catch {
-      // тихо игнорируем для учебного проекта
+      // для учебного проекта можно молча игнорировать
     }
   };
 
-  // разбираем imageUrl на массив для коллажей
+  // массив ссылок на картинки
   const imageUrls: string[] = post.imageUrl
     ? post.imageUrl
         .split("|||")
@@ -62,27 +63,42 @@ export default function PostCard({ post }: Props) {
         .filter(Boolean)
     : [];
 
+  // индекс текущего фото для карусели (если их 3+)
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!imageUrls.length) return;
+    setCurrentIndex((prev) =>
+      prev === 0 ? imageUrls.length - 1 : prev - 1
+    );
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!imageUrls.length) return;
+    setCurrentIndex((prev) =>
+      prev === imageUrls.length - 1 ? 0 : prev + 1
+    );
+  };
+
   const renderImages = () => {
     if (imageUrls.length === 0) return null;
 
-    // одна картинка — почти без кропа
+    // одна картинка — без кропа
     if (imageUrls.length === 1) {
       return (
         <div
           className="post-card__image-wrapper"
-          style={{
-            marginTop: 8,
-          }}
+          style={{ marginTop: 8 }}
         >
           <img
             src={imageUrls[0]}
             alt={post.caption}
-            className="post-card__image"
             style={{
               width: "100%",
               display: "block",
               borderRadius: 16,
-              // если хочешь вообще без обрезки — оставляем contain
               objectFit: "contain",
               maxHeight: 500,
               backgroundColor: "#020617",
@@ -92,65 +108,168 @@ export default function PostCard({ post }: Props) {
       );
     }
 
-    // 2–4 картинки — аккуратный коллаж
-    const urls = imageUrls.slice(0, 4);
+    // две картинки — простой коллаж
+    if (imageUrls.length === 2) {
+      return (
+        <div
+          className="post-card__collage-two"
+          style={{
+            marginTop: 8,
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 4,
+            borderRadius: 16,
+            overflow: "hidden",
+            maxHeight: 450,
+          }}
+        >
+          {imageUrls.map((url, idx) => (
+            <div
+              key={idx}
+              style={{
+                position: "relative",
+                width: "100%",
+                aspectRatio: "4 / 3",
+                backgroundColor: "#020617",
+              }}
+            >
+              <img
+                src={url}
+                alt={`${post.caption} #${idx + 1}`}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  display: "block",
+                  objectFit: "cover",
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // три и больше — карусель
+    const currentUrl = imageUrls[currentIndex];
 
     return (
       <div
-        className="post-card__collage"
+        className="post-card__carousel"
         style={{
           marginTop: 8,
-          display: "grid",
-          gridTemplateColumns:
-            urls.length === 2 ? "1fr 1fr" : "1fr 1fr",
-          gap: 4,
+          position: "relative",
           borderRadius: 16,
           overflow: "hidden",
-          // ограничение по высоте всего блока, чтобы не растягивался бесконечно
-          maxHeight: 450,
+          backgroundColor: "#020617",
         }}
       >
-        {urls.map((url, idx) => (
-          <div
-            key={idx}
+        <div
+          style={{
+            width: "100%",
+            maxHeight: 500,
+          }}
+        >
+          <img
+            src={currentUrl}
+            alt={`${post.caption} #${currentIndex + 1}`}
             style={{
-              position: "relative",
               width: "100%",
-              // для 2 фоток — прямоугольники 4:3, для 3–4 — квадраты
-              aspectRatio: urls.length <= 2 ? "4 / 3" : "1 / 1",
+              height: "100%",
+              maxHeight: 500,
+              display: "block",
+              objectFit: "contain", // ничего не режем
               backgroundColor: "#020617",
             }}
-          >
-            <img
-              src={url}
-              alt={`${post.caption} #${idx + 1}`}
+          />
+        </div>
+
+        {/* левая стрелка */}
+        <button
+          type="button"
+          onClick={handlePrev}
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: 8,
+            transform: "translateY(-50%)",
+            border: "none",
+            borderRadius: "999px",
+            width: 32,
+            height: 32,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "rgba(15,23,42,0.7)",
+            color: "#e5e7eb",
+            cursor: "pointer",
+            fontSize: 18,
+          }}
+        >
+          ‹
+        </button>
+
+        {/* правая стрелка */}
+        <button
+          type="button"
+          onClick={handleNext}
+          style={{
+            position: "absolute",
+            top: "50%",
+            right: 8,
+            transform: "translateY(-50%)",
+            border: "none",
+            borderRadius: "999px",
+            width: 32,
+            height: 32,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "rgba(15,23,42,0.7)",
+            color: "#e5e7eb",
+            cursor: "pointer",
+            fontSize: 18,
+          }}
+        >
+          ›
+        </button>
+
+        {/* индикаторы снизу */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 8,
+            left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "4px 8px",
+            borderRadius: 999,
+            backgroundColor: "rgba(15,23,42,0.7)",
+          }}
+        >
+          {imageUrls.map((_, idx) => (
+            <span
+              key={idx}
               style={{
-                width: "100%",
-                height: "100%",
-                display: "block",
-                // мягкий кроп, одинаковый для всех
-                objectFit: "cover",
+                width: 6,
+                height: 6,
+                borderRadius: "999px",
+                backgroundColor:
+                  idx === currentIndex ? "#e5e7eb" : "#4b5563",
               }}
             />
-            {idx === 3 && imageUrls.length > 4 && (
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  backgroundColor: "rgba(15,23,42,0.65)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 32,
-                  color: "#e5e7eb",
-                  fontWeight: 600,
-                }}
-              >
-                +{imageUrls.length - 4}
-              </div>
-            )}
-          </div>
-        ))}
+          ))}
+          <span
+            style={{
+              fontSize: 11,
+              color: "#e5e7eb",
+              marginLeft: 6,
+            }}
+          >
+            {currentIndex + 1}/{imageUrls.length}
+          </span>
+        </div>
       </div>
     );
   };
