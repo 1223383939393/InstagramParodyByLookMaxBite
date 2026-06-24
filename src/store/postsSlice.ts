@@ -1,4 +1,3 @@
-// src/store/postsSlice.ts
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
@@ -114,28 +113,6 @@ const postsSlice = createSlice({
       state.sortBy = action.payload;
       savePosts(state);
     },
-
-    toggleLike(
-      state,
-      action: PayloadAction<{ postId: string; userId: string }>
-    ) {
-      const { postId, userId } = action.payload;
-      const post = state.items.find((p) => p.id === postId);
-      if (!post) return;
-
-      const alreadyLiked = post.likedByUserIds.includes(userId);
-      if (alreadyLiked) {
-        post.likedByUserIds = post.likedByUserIds.filter(
-          (id) => id !== userId
-        );
-        post.likes = Math.max(0, post.likes - 1);
-      } else {
-        post.likedByUserIds.push(userId);
-        post.likes += 1;
-      }
-
-      savePosts(state);
-    },
   },
 });
 
@@ -148,7 +125,6 @@ export const {
   setSearch,
   setTagFilter,
   setSortBy,
-  toggleLike,
 } = postsSlice.actions;
 
 export default postsSlice.reducer;

@@ -1,8 +1,13 @@
 import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import {
+  useDispatch,
+  useSelector,
+} from "react-redux";
 import type { Post } from "../../store/postsSlice";
 import { addCommentToPost } from "../../store/postsSlice";
 import type { RootState } from "../../app/store";
+
+const API_BASE = "https://lmbq-backend.onrender.com";
 
 type PostCommentsProps = {
   post: Post;
@@ -20,7 +25,7 @@ export default function PostComments({
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -30,22 +35,46 @@ export default function PostComments({
     }
     if (!text.trim()) return;
 
-    const comment = {
-      id: crypto.randomUUID(),
-      authorId: currentUserId,
-      text: text.trim(),
-      createdAt: new Date().toISOString(),
-    };
+    const token = localStorage.getItem("lmbq_token");
+    if (!token) {
+      setError("Токен не найден, войдите заново");
+      return;
+    }
 
-    setSending(true);
-    dispatch(
-      addCommentToPost({
-        postId: post.id,
-        comment,
-      })
-    );
-    setText("");
-    setSending(false);
+    try {
+      setSending(true);
+      const res = await fetch(
+        `${API_BASE}/api/posts/${post.id}/comments`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ text: text.trim() }),
+        }
+      );
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(
+          err?.error || "Не удалось отправить комментарий"
+        );
+      }
+
+      const createdComment = await res.json();
+      dispatch(
+        addCommentToPost({
+          postId: post.id,
+          comment: createdComment,
+        })
+      );
+      setText("");
+    } catch (err: any) {
+      setError(err.message || "Ошибка отправки комментария");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -59,7 +88,8 @@ export default function PostComments({
           }}
         >
           {post.comments.map((c) => {
-            const author = users.find((u) => u.id === c.authorId) || null;
+            const author =
+              users.find((u) => u.id === c.authorId) || null;
 
             return (
               <div

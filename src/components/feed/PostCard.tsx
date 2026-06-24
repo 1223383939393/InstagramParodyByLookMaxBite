@@ -1,9 +1,11 @@
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../app/store";
 import type { Post } from "../../store/postsSlice";
 import { DEFAULT_AVATAR } from "../../constants/avatar";
 import PostComments from "./PostComments";
-import { toggleLike } from "../../store/postsSlice";
+import { updatePostFromServer } from "../../store/postsSlice";
+
+const API_BASE = "https://lmbq-backend.onrender.com";
 
 type Props = {
   post: Post;
@@ -12,7 +14,8 @@ type Props = {
 export default function PostCard({ post }: Props) {
   const dispatch = useDispatch();
   const usersState = useSelector((state: RootState) => state.users);
-  const author = usersState.items.find((u) => u.id === post.authorId) || null;
+  const author =
+    usersState.items.find((u) => u.id === post.authorId) || null;
   const currentUserId = usersState.currentUserId;
 
   const avatarSrc =
@@ -23,15 +26,31 @@ export default function PostCard({ post }: Props) {
   const isLikedByCurrentUser =
     !!currentUserId && post.likedByUserIds.includes(currentUserId);
 
-  const handleLikeClick = (e: React.MouseEvent) => {
+  const handleLikeClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUserId) return;
-    dispatch(
-      toggleLike({
-        postId: post.id,
-        userId: currentUserId,
-      })
-    );
+
+    const token = localStorage.getItem("lmbq_token");
+    if (!token) return;
+
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/posts/${post.id}/like`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (!res.ok) {
+        return;
+      }
+      const updatedPost: Post = await res.json();
+      dispatch(updatePostFromServer(updatedPost));
+    } catch {
+      // тут можно показать уведомление, но для учебного проекта можно игнорировать
+    }
   };
 
   return (
