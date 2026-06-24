@@ -2,10 +2,15 @@
 import { useSelector } from "react-redux";
 import type { RootState } from "../../app/store";
 import PostCard from "./PostCard";
+import PostModal from "./PostModal";
+import { useState } from "react";
 
 export default function PostList() {
   const { items, search, tagFilter, sortBy } = useSelector(
     (state: RootState) => state.posts
+  );
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(
+    null
   );
 
   const filtered = [...items]
@@ -27,11 +32,29 @@ export default function PostList() {
       );
     });
 
+  const selectedPost =
+    filtered.find((p) => p.id === selectedPostId) ?? null;
+
   return (
-    <div className="post-list">
-      {filtered.map((post) => (
-        <PostCard key={post.id} post={post} />
-      ))}
-    </div>
+    <>
+      <div className="post-list">
+        {filtered.map((post) => (
+          <div
+            key={post.id}
+            onClick={() => setSelectedPostId(post.id)}
+            style={{ cursor: "pointer" }}
+          >
+            <PostCard post={post} />
+          </div>
+        ))}
+      </div>
+
+      {selectedPost && (
+        <PostModal
+          post={selectedPost}
+          onClose={() => setSelectedPostId(null)}
+        />
+      )}
+    </>
   );
 }

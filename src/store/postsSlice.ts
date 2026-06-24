@@ -24,24 +24,24 @@ type PostsState = {
 const demoPosts: Post[] = [
   {
     id: "1",
-    authorId: "user1",
+    authorId: "marat",
     imageUrl:
       "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=800&q=80",
     caption: "Утренний пит-стоп",
     tags: ["f1", "morning"],
     likes: 128,
-    likedByUserIds: ["user2"],
+    likedByUserIds: ["marat"],
     createdAt: "2026-06-20T10:00:00Z",
   },
   {
     id: "2",
-    authorId: "user2",
+    authorId: "marat",
     imageUrl:
       "https://images.unsplash.com/photo-1518176258769-f227c79839a2?auto=format&fit=crop&w=800&q=80",
     caption: "Ночная гонка",
     tags: ["night", "racing"],
     likes: 256,
-    likedByUserIds: ["user1"],
+    likedByUserIds: ["marat"],
     createdAt: "2026-06-21T22:30:00Z",
   },
 ];
@@ -72,13 +72,19 @@ const postsSlice = createSlice({
       if (!post) return;
 
       const likedSet = new Set(post.likedByUserIds ?? []);
+
       if (likedSet.has(action.payload.userId)) {
-        return;
+        // уже лайкнул — убираем лайк
+        likedSet.delete(action.payload.userId);
+        post.likedByUserIds = Array.from(likedSet);
+        post.likes = Math.max(0, post.likes - 1);
+      } else {
+        // ставим лайк
+        likedSet.add(action.payload.userId);
+        post.likedByUserIds = Array.from(likedSet);
+        post.likes += 1;
       }
 
-      likedSet.add(action.payload.userId);
-      post.likedByUserIds = Array.from(likedSet);
-      post.likes += 1;
       savePosts(state.items);
     },
     setSearch(state, action: PayloadAction<string>) {

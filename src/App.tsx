@@ -1,10 +1,23 @@
+// src/App.tsx
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import type { RootState } from "./app/store";
 import FeedPage from "./pages/FeedPage";
 import ExplorePage from "./pages/ExplorePage";
 import ProfilePage from "./pages/ProfilePage";
+import AuthPage from "./pages/AuthPage";
+import NewPostPage from "./pages/NewPostPage";
 import Sidebar from "./components/layout/Sidebar";
 
-export default function App() {
+function ProtectedLayout() {
+  const isAuthenticated = useSelector(
+    (state: RootState) => state.users.isAuthenticated
+  );
+
+  if (!isAuthenticated) {
+    return <AuthPage />;
+  }
+
   return (
     <div className="app-layout">
       <Sidebar />
@@ -14,9 +27,19 @@ export default function App() {
           <Route path="/feed" element={<FeedPage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/:userId" element={<ProfilePage />} />
+          <Route path="/new" element={<NewPostPage />} />
           <Route path="*" element={<FeedPage />} />
         </Routes>
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/*" element={<ProtectedLayout />} />
+    </Routes>
   );
 }

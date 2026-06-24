@@ -5,20 +5,28 @@ import PostCard from "../components/feed/PostCard";
 import { updateProfile } from "../store/usersSlice";
 import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
+import { useParams } from "react-router-dom";
+import { DEFAULT_AVATAR } from "../constants/avatar";
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
+  const { userId } = useParams<{ userId: string }>();
   const usersState = useSelector((state: RootState) => state.users);
 
+  const activeUserId = userId ?? usersState.currentUserId;
+
   const profile = usersState.items.find(
-    (u) => u.id === usersState.currentUserId
+    (u) => u.id === activeUserId
   );
 
   const posts = useSelector((state: RootState) =>
-    state.posts.items.filter((p) => p.authorId === usersState.currentUserId)
+    state.posts.items.filter((p) => p.authorId === activeUserId)
   );
 
   const [localAvatar, setLocalAvatar] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isAvatarOpen, setIsAvatarOpen] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
 
   if (!profile) return null;
 
@@ -27,6 +35,7 @@ export default function ProfilePage() {
     if (!file) return;
     const url = URL.createObjectURL(file);
     setLocalAvatar(url);
+    setAvatarError(false);
   };
 
   const handleProfileSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -43,60 +52,93 @@ export default function ProfilePage() {
         localAvatar ??
         formData.get("avatarUrl")?.toString() ??
         profile.avatarUrl,
+      password: profile.password,
     };
 
     dispatch(updateProfile(updated));
+    setIsEditing(false);
   };
+
+  const avatarSrc =
+    !avatarError && (localAvatar || profile.avatarUrl)
+      ? localAvatar || profile.avatarUrl
+      : DEFAULT_AVATAR;
 
   return (
     <div className="page profile-page">
       <header className="profile-header">
         <img
-          src={localAvatar ?? profile.avatarUrl}
+          src={avatarSrc}
           alt={profile.username}
           className="profile-avatar"
+          onClick={() => setIsAvatarOpen(true)}
+          style={{ cursor: "pointer" }}
+          onError={() => setAvatarError(true)}
         />
         <div>
           <h2>{profile.username}</h2>
           <p>{profile.fullName}</p>
           <p>{profile.bio}</p>
+          <p
+            style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}
+          >
+            Публичный профиль в LMBQ
+          </p>
+          <button
+            type="button"
+            style={{
+              marginTop: 8,
+              padding: "4px 10px",
+              borderRadius: 999,
+              border: "none",
+              background:
+                "linear-gradient(135deg, #6366f1, #ec4899)",
+              color: "white",
+              fontSize: 12,
+              cursor: "pointer",
+            }}
+            onClick={() => setIsEditing((v) => !v)}
+          >
+            {isEditing ? "Отменить" : "Редактировать профиль"}
+          </button>
         </div>
       </header>
 
-      <section style={{ marginBottom: 24 }}>
-        <h3>Редактировать профиль</h3>
-        <form
-          onSubmit={handleProfileSubmit}
-          style={{ display: "flex", flexDirection: "column", gap: 8 }}
-        >
-          <input
-            name="username"
-            defaultValue={profile.username}
-            placeholder="Никнейм"
-          />
-          <input
-            name="fullName"
-            defaultValue={profile.fullName}
-            placeholder="Полное имя"
-          />
-          <input
-            name="avatarUrl"
-            defaultValue={profile.avatarUrl}
-            placeholder="Ссылка на аватар (можно пусто)"
-          />
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleAvatarFile}
-          />
-          <textarea
-            name="bio"
-            defaultValue={profile.bio}
-            placeholder="О себе"
-          />
-          <button type="submit">Сохранить профиль</button>
-        </form>
-      </section>
+      {isEditing && (
+        <section style={{ marginBottom: 24 }}>
+          <form
+            onSubmit={handleProfileSubmit}
+            style={{ display: "flex", flexDirection: "column", gap: 8 }}
+          >
+            <input
+              name="username"
+              defaultValue={profile.username}
+              placeholder="Никнейм"
+            />
+            <input
+              name="fullName"
+              defaultValue={profile.fullName}
+              placeholder="Полное имя"
+            />
+            <input
+              name="avatarUrl"
+              defaultValue={profile.avatarUrl}
+              placeholder="Ссылка на аватар (можно пусто)"
+            />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarFile}
+            />
+            <textarea
+              name="bio"
+              defaultValue={profile.bio}
+              placeholder="О себе"
+            />
+            <button type="submit">Сохранить профиль</button>
+          </form>
+        </section>
+      )}
 
       <section className="profile-posts">
         <h3>Посты</h3>
@@ -106,6 +148,33 @@ export default function ProfilePage() {
           ))}
         </div>
       </section>
+
+      {isAvatarOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15,23,42,0.9)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 60,
+          }}
+          onClick={() => setIsAvatarOpen(false)}
+        >
+          <img
+            src={avatarSrc}
+            alt={profile.username}
+            style={{
+              maxWidth: "80vw",
+              maxHeight: "80vh",
+              borderRadius: "16px",
+              border: "1px solid #374151",
+              objectFit: "contain",
+            }}
+          />
+        </div>
+      )}
     </div>
   );
-}   
+}

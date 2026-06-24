@@ -4,6 +4,8 @@ import { useState } from "react";
 import { likePost } from "../../store/postsSlice";
 import type { Post } from "../../store/postsSlice";
 import type { RootState } from "../../app/store";
+import { DEFAULT_AVATAR } from "../../constants/avatar";
+import { useNavigate } from "react-router-dom";
 
 type Props = {
   post: Post;
@@ -11,30 +13,50 @@ type Props = {
 
 export default function PostCard({ post }: Props) {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const author = useSelector((state: RootState) =>
     state.users.items.find((u) => u.id === post.authorId)
   );
+
   const currentUserId = useSelector(
     (state: RootState) => state.users.currentUserId
   );
-  const [imageError, setImageError] = useState(false);
 
-  const hasImage = post.imageUrl && !imageError;
+  const [imageError, setImageError] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+
+  const shouldShowImage = post.imageUrl && !imageError;
   const alreadyLiked =
-    post.likedByUserIds?.includes(currentUserId) ?? false;
+    post.likedByUserIds?.includes(currentUserId ?? "") ?? false;
 
   const handleLike = () => {
     if (!currentUserId) return;
-    dispatch(likePost({ postId: post.id, userId: currentUserId }));
+    const userId = currentUserId;
+    dispatch(likePost({ postId: post.id, userId }));
   };
+
+  const handleAvatarClick = (e: React.MouseEvent<HTMLImageElement>) => {
+    e.stopPropagation();
+    if (author?.id) {
+      navigate(`/profile/${author.id}`);
+    }
+  };
+
+  const avatarSrc =
+    !avatarError && author?.avatarUrl
+      ? author.avatarUrl
+      : DEFAULT_AVATAR;
 
   return (
     <article className="post-card">
       <header className="post-card__header">
         <img
-          src={author?.avatarUrl}
+          src={avatarSrc}
           alt={author?.username}
           className="post-card__avatar"
+          onClick={handleAvatarClick}
+          onError={() => setAvatarError(true)}
         />
         <div>
           <div className="post-card__username">{author?.username}</div>
@@ -42,26 +64,21 @@ export default function PostCard({ post }: Props) {
         </div>
       </header>
 
-      <div className="post-card__image-wrapper">
-        {hasImage ? (
+      {shouldShowImage && (
+        <div className="post-card__image-wrapper">
           <img
             src={post.imageUrl}
             alt={post.caption}
             className="post-card__image"
             onError={() => setImageError(true)}
           />
-        ) : (
-          <div className="post-card__image--placeholder">
-            NO IMAGE
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="post-card__body">
         <button
           className="post-card__like-button"
           onClick={handleLike}
-          disabled={alreadyLiked}
         >
           {alreadyLiked ? "💜" : "❤️"} {post.likes}
         </button>
