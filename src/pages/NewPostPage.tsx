@@ -22,11 +22,11 @@ export default function NewPostPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(
+    null
+  );
 
   const handleImageFileChange = (file: File | null) => {
-    setImageFile(file);
     if (file) {
       const url = URL.createObjectURL(file);
       setImagePreviewUrl(url);
@@ -62,7 +62,6 @@ export default function NewPostPage() {
     try {
       setLoading(true);
 
-      // Пока отправляем только imageUrl (файлы — только для превью на фронте)
       const res = await fetch(`${API_BASE}/api/posts`, {
         method: "POST",
         headers: {
@@ -87,7 +86,6 @@ export default function NewPostPage() {
       setCaption("");
       setImageUrl("");
       setTagsText("");
-      setImageFile(null);
       setImagePreviewUrl(null);
 
       navigate("/feed");
