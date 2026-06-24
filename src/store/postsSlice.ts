@@ -1,4 +1,3 @@
-// src/store/postsSlice.ts
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
@@ -41,17 +40,14 @@ const postsSlice = createSlice({
   name: "posts",
   initialState,
   reducers: {
-    // посты с сервера (лента)
     setPostsFromServer(state, action: PayloadAction<Post[]>) {
       state.items = action.payload;
     },
 
-    // добавление одного поста (созданного на сервере)
     addPostFromServer(state, action: PayloadAction<Post>) {
       state.items.unshift(action.payload);
     },
 
-    // обновление поста (например, лайки/редактирование)
     updatePostFromServer(state, action: PayloadAction<Post>) {
       const updated = action.payload;
       const index = state.items.findIndex((p) => p.id === updated.id);
@@ -76,7 +72,6 @@ const postsSlice = createSlice({
       state.items = state.items.filter((p) => p.id !== postId);
     },
 
-    // --- фильтры и сортировка для PostFilters / PostList ---
     setSearch(state, action: PayloadAction<string>) {
       state.search = action.payload;
     },
@@ -87,6 +82,24 @@ const postsSlice = createSlice({
 
     setSortBy(state, action: PayloadAction<SortBy>) {
       state.sortBy = action.payload;
+    },
+
+    toggleLike(
+      state,
+      action: PayloadAction<{ postId: string; userId: string }>
+    ) {
+      const { postId, userId } = action.payload;
+      const post = state.items.find((p) => p.id === postId);
+      if (!post) return;
+
+      const alreadyLiked = post.likedByUserIds.includes(userId);
+      if (alreadyLiked) {
+        post.likedByUserIds = post.likedByUserIds.filter((id) => id !== userId);
+        post.likes = Math.max(0, post.likes - 1);
+      } else {
+        post.likedByUserIds.push(userId);
+        post.likes += 1;
+      }
     },
   },
 });
@@ -100,6 +113,7 @@ export const {
   setSearch,
   setTagFilter,
   setSortBy,
+  toggleLike,
 } = postsSlice.actions;
 
 export default postsSlice.reducer;

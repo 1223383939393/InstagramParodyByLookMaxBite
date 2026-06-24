@@ -1,8 +1,8 @@
-// src/components/feed/PostComments.tsx
 import { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { Post } from "../../store/postsSlice";
 import { addCommentToPost } from "../../store/postsSlice";
+import type { RootState } from "../../app/store";
 
 type PostCommentsProps = {
   post: Post;
@@ -14,6 +14,8 @@ export default function PostComments({
   currentUserId,
 }: PostCommentsProps) {
   const dispatch = useDispatch();
+  const users = useSelector((state: RootState) => state.users.items);
+
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -56,21 +58,26 @@ export default function PostComments({
             paddingTop: 8,
           }}
         >
-          {post.comments.map((c) => (
-            <div
-              key={c.id}
-              style={{
-                fontSize: 13,
-                color: "#e5e7eb",
-                marginBottom: 4,
-              }}
-            >
-              <span style={{ color: "#9ca3af", fontSize: 11 }}>
-                {new Date(c.createdAt).toLocaleString()}
-              </span>
-              <div>{c.text}</div>
-            </div>
-          ))}
+          {post.comments.map((c) => {
+            const author = users.find((u) => u.id === c.authorId) || null;
+
+            return (
+              <div
+                key={c.id}
+                style={{
+                  fontSize: 13,
+                  color: "#e5e7eb",
+                  marginBottom: 4,
+                }}
+              >
+                <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                  {author ? `@${author.username}` : "Неизвестный"} ·{" "}
+                  {new Date(c.createdAt).toLocaleString()}
+                </div>
+                <div>{c.text}</div>
+              </div>
+            );
+          })}
         </div>
       )}
 

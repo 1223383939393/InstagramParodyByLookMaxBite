@@ -1,4 +1,3 @@
-// src/components/feed/PostList.tsx
 import { useSelector } from "react-redux";
 import type { RootState } from "../../app/store";
 import { useState } from "react";
@@ -11,8 +10,8 @@ export default function PostList() {
   );
   const [openedPostId, setOpenedPostId] = useState<string | null>(null);
 
-  // фильтрация по поиску
   let posts = items;
+
   if (search.trim()) {
     const q = search.trim().toLowerCase();
     posts = posts.filter((p) => {
@@ -22,12 +21,10 @@ export default function PostList() {
     });
   }
 
-  // фильтр по тегу
   if (tagFilter) {
     posts = posts.filter((p) => p.tags.includes(tagFilter));
   }
 
-  // сортировка
   if (sortBy === "new") {
     posts = [...posts].sort(
       (a, b) =>

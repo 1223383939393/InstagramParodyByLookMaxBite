@@ -1,4 +1,3 @@
-// src/components/feed/PostModal.tsx
 import type { Post } from "../../store/postsSlice";
 import PostCard from "./PostCard";
 

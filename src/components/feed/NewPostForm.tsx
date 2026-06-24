@@ -1,4 +1,3 @@
-// src/components/feed/NewPostForm.tsx
 import React from "react";
 
 type NewPostFormProps = {
@@ -7,9 +6,11 @@ type NewPostFormProps = {
   tagsText: string;
   error: string | null;
   loading: boolean;
+  imagePreviewUrl: string | null;
   onCaptionChange: (v: string) => void;
   onImageUrlChange: (v: string) => void;
   onTagsTextChange: (v: string) => void;
+  onImageFileChange: (file: File | null) => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 };
 
@@ -19,9 +20,11 @@ export default function NewPostForm({
   tagsText,
   error,
   loading,
+  imagePreviewUrl,
   onCaptionChange,
   onImageUrlChange,
   onTagsTextChange,
+  onImageFileChange,
   onSubmit,
 }: NewPostFormProps) {
   return (
@@ -41,6 +44,31 @@ export default function NewPostForm({
           value={imageUrl}
           onChange={(e) => onImageUrlChange(e.target.value)}
         />
+
+        <div style={{ margin: "8px 0" }}>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) =>
+              onImageFileChange(e.target.files?.[0] || null)
+            }
+          />
+        </div>
+
+        {imagePreviewUrl && (
+          <div style={{ marginBottom: 8 }}>
+            <img
+              src={imagePreviewUrl}
+              alt="Предпросмотр"
+              style={{
+                maxWidth: "100%",
+                maxHeight: 300,
+                borderRadius: 16,
+                objectFit: "cover",
+              }}
+            />
+          </div>
+        )}
 
         <textarea
           className="new-post-caption"

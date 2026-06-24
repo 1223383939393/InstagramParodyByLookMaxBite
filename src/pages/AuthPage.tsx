@@ -101,7 +101,6 @@ export default function AuthPage() {
 
       localStorage.setItem("lmbq_token", result.token);
 
-      // кладём пользователя из API в Redux и делаем его текущим
       dispatch(
         upsertUser({
           id: result.user.id,
@@ -135,9 +134,12 @@ export default function AuthPage() {
       setLoading(true);
       const result = await apiRegister({
         username: registerUsername.trim(),
-        email: registerEmail.trim() || `${registerUsername.trim()}@example.com`,
+        email:
+          registerEmail.trim() ||
+          `${registerUsername.trim()}@example.com`,
         password: registerPassword,
-        fullName: registerFullName.trim() || registerUsername.trim(),
+        fullName:
+          registerFullName.trim() || registerUsername.trim(),
         avatarUrl: registerAvatarUrl.trim() || undefined,
         bio: registerBio.trim() || undefined,
       });
@@ -164,124 +166,131 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="app-layout">
-      <aside className="sidebar">
-        <h1 className="sidebar__logo">PIXLY</h1>
-        <nav className="sidebar__nav">
-          <a className="active">Главная</a>
-          <a>Исследовать</a>
-          <a>Профиль</a>
-        </nav>
-      </aside>
+    <div className="auth-page">
+      {/* левый блок с логотипом и описанием */}
+      <div className="auth-page__branding">
+        <h1 className="auth-logo">PIXLY</h1>
+        <p className="auth-tagline">
+          Делись моментами. Открывай новое. Следи за друзьями.
+        </p>
+      </div>
 
-      <main className="main-content">
-        <div className="page">
-          <div
-            className="new-post-form"
-            style={{ maxWidth: 420, marginTop: 40 }}
-          >
-            <h2>
-              {mode === "login" ? "Вход в Pixly" : "Регистрация в Pixly"}
-            </h2>
-
+      {/* правая карточка с формой */}
+      <div className="auth-page__card">
+        <div className="auth-card-inner">
+          <p className="auth-mode-toggle">
+            {mode === "login"
+              ? "Нет аккаунта?"
+              : "Уже есть аккаунт?"}{" "}
             <button
               type="button"
-              style={{
-                marginTop: 8,
-                marginBottom: 12,
-                fontSize: 13,
-                background: "transparent",
-                border: "none",
-                color: "var(--text-muted)",
-                cursor: "pointer",
-                textAlign: "left",
-              }}
               onClick={() =>
-                setMode((prev) => (prev === "login" ? "register" : "login"))
+                setMode((prev) =>
+                  prev === "login" ? "register" : "login"
+                )
               }
             >
-              Переключить режим (сейчас:{" "}
-              {mode === "login" ? "Вход" : "Регистрация"})
+              {mode === "login" ? "Зарегистрироваться" : "Войти"}
             </button>
+          </p>
 
-            {globalError && (
-              <p className="auth-error-global">{globalError}</p>
-            )}
-            {passwordError && (
-              <p className="auth-error-password">{passwordError}</p>
-            )}
+          <h2 className="auth-title">
+            {mode === "login"
+              ? "Вход в Pixly"
+              : "Регистрация в Pixly"}
+          </h2>
+          <p className="auth-subtitle">
+            {mode === "login"
+              ? "Добро пожаловать обратно! Войдите, чтобы посмотреть ленту."
+              : "Создайте аккаунт и начинайте публиковать свои снимки."}
+          </p>
 
-            {mode === "login" ? (
-              <form onSubmit={handleLoginSubmit} className="auth-form">
-                <input
-                  placeholder="Логин или email"
-                  value={loginUsername}
-                  onChange={(e) => setLoginUsername(e.target.value)}
-                />
-                <input
-                  type="password"
-                  placeholder="Пароль"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                />
-                <button type="submit" disabled={loading}>
-                  Войти
-                </button>
-              </form>
-            ) : (
-              <form
-                onSubmit={handleRegisterSubmit}
-                className="auth-form"
-              >
-                <input
-                  placeholder="Логин"
-                  value={registerUsername}
-                  onChange={(e) =>
-                    setRegisterUsername(e.target.value)
-                  }
-                />
-                <input
-                  placeholder="Email"
-                  value={registerEmail}
-                  onChange={(e) =>
-                    setRegisterEmail(e.target.value)
-                  }
-                />
-                <input
-                  placeholder="Полное имя"
-                  value={registerFullName}
-                  onChange={(e) =>
-                    setRegisterFullName(e.target.value)
-                  }
-                />
-                <input
-                  placeholder="URL аватара"
-                  value={registerAvatarUrl}
-                  onChange={(e) =>
-                    setRegisterAvatarUrl(e.target.value)
-                  }
-                />
-                <input
-                  placeholder="Био"
-                  value={registerBio}
-                  onChange={(e) => setRegisterBio(e.target.value)}
-                />
-                <input
-                  type="password"
-                  placeholder="Пароль"
-                  value={registerPassword}
-                  onChange={(e) =>
-                    setRegisterPassword(e.target.value)
-                  }
-                />
-                <button type="submit" disabled={loading}>
-                  Зарегистрироваться
-                </button>
-              </form>
-            )}
-          </div>
+          {globalError && (
+            <p className="auth-error-global">{globalError}</p>
+          )}
+          {passwordError && (
+            <p className="auth-error-password">{passwordError}</p>
+          )}
+
+          {mode === "login" ? (
+            <form
+              onSubmit={handleLoginSubmit}
+              className="auth-form"
+            >
+              <input
+                placeholder="Логин или email"
+                value={loginUsername}
+                onChange={(e) =>
+                  setLoginUsername(e.target.value)
+                }
+              />
+              <input
+                type="password"
+                placeholder="Пароль"
+                value={loginPassword}
+                onChange={(e) =>
+                  setLoginPassword(e.target.value)
+                }
+              />
+              <button type="submit" disabled={loading}>
+                {loading ? "Входим..." : "Войти"}
+              </button>
+            </form>
+          ) : (
+            <form
+              onSubmit={handleRegisterSubmit}
+              className="auth-form"
+            >
+              <input
+                placeholder="Логин"
+                value={registerUsername}
+                onChange={(e) =>
+                  setRegisterUsername(e.target.value)
+                }
+              />
+              <input
+                placeholder="Email"
+                value={registerEmail}
+                onChange={(e) =>
+                  setRegisterEmail(e.target.value)
+                }
+              />
+              <input
+                placeholder="Полное имя"
+                value={registerFullName}
+                onChange={(e) =>
+                  setRegisterFullName(e.target.value)
+                }
+              />
+              <input
+                placeholder="URL аватара"
+                value={registerAvatarUrl}
+                onChange={(e) =>
+                  setRegisterAvatarUrl(e.target.value)
+                }
+              />
+              <input
+                placeholder="Био"
+                value={registerBio}
+                onChange={(e) =>
+                  setRegisterBio(e.target.value)
+                }
+              />
+              <input
+                type="password"
+                placeholder="Пароль"
+                value={registerPassword}
+                onChange={(e) =>
+                  setRegisterPassword(e.target.value)
+                }
+              />
+              <button type="submit" disabled={loading}>
+                {loading ? "Создаём..." : "Зарегистрироваться"}
+              </button>
+            </form>
+          )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }
