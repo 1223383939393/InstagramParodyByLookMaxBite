@@ -66,14 +66,14 @@ export default function NewPostPage() {
     try {
       setLoading(true);
 
-      // 1) текстовый URL — приоритет
+      // 1) Если пользователь ввёл URL руками — используем его
       if (imageUrlText.trim()) {
         finalImageUrl = imageUrlText.trim();
       } else if (imageFiles.length) {
-        // 2) если есть файлы — грузим их
+        // 2) Иначе грузим файлы на бэкенд
         const fd = new FormData();
         imageFiles.forEach((file) => {
-          fd.append("files", file); // имя поля "files" совпадает с upload.array("files")
+          fd.append("files", file); // имя ключа "files" совпадает с upload.array("files")
         });
 
         const uploadRes = await fetch(`${API_BASE}/api/upload-images`, {
@@ -97,7 +97,7 @@ export default function NewPostPage() {
           throw new Error("Сервер не вернул URL картинок");
         }
 
-        // склеиваем в одну строку — PostCard уже умеет это разбивать и делать коллаж
+        // Склеиваем все урлы в одну строку — PostCard уже умеет сплитить по "|||"
         finalImageUrl = uploadJson.urls.join("|||");
       }
 
