@@ -1,12 +1,10 @@
 // src/pages/AuthPage.tsx
-import { useDispatch, useSelector } from "react-redux";
-import type { RootState } from "../app/store";
+import { useDispatch } from "react-redux";
 import { loginUser, registerUser } from "../store/usersSlice";
 import { useState } from "react";
 
 export default function AuthPage() {
   const dispatch = useDispatch();
-  const usersState = useSelector((state: RootState) => state.users);
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [loginUsername, setLoginUsername] = useState("");
