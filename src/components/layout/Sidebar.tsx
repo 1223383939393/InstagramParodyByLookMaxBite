@@ -29,6 +29,7 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <h1 className="sidebar__logo">PIXLY</h1>
+
       <nav className="sidebar__nav">
         <NavLink to="/feed">Лента</NavLink>
         <NavLink to="/explore">Исследовать</NavLink>

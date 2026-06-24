@@ -8,7 +8,7 @@ export type UserProfile = {
   fullName: string;
   avatarUrl?: string | null;
   bio?: string | null;
-  password?: string; // пароль из API можно не хранить обязательно
+  password?: string;
 };
 
 export type UsersState = {
@@ -33,7 +33,7 @@ function saveUsers(state: UsersState) {
   try {
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(state));
   } catch {
-    // игнорируем ошибки записи
+    // ignore
   }
 }
 
@@ -49,7 +49,6 @@ const usersSlice = createSlice({
   name: "users",
   initialState,
   reducers: {
-    // регистрируем/обновляем пользователя из бекенда
     upsertUser(state, action: PayloadAction<UserProfile>) {
       const user = action.payload;
       const idx = state.items.findIndex((u) => u.id === user.id);
@@ -60,7 +59,6 @@ const usersSlice = createSlice({
       }
       saveUsers(state);
     },
-    // логин по id пользователя (из API)
     setCurrentUser(state, action: PayloadAction<string>) {
       state.currentUserId = action.payload;
       state.isAuthenticated = true;
@@ -69,10 +67,13 @@ const usersSlice = createSlice({
     logout(state) {
       state.currentUserId = null;
       state.isAuthenticated = false;
+      // ВАЖНО: НЕ трогаем state.items, чтобы профили сохранялись
       saveUsers(state);
     },
     updateProfile(state, action: PayloadAction<UserProfile>) {
-      const idx = state.items.findIndex((u) => u.id === action.payload.id);
+      const idx = state.items.findIndex(
+        (u) => u.id === action.payload.id
+      );
       if (idx !== -1) {
         state.items[idx] = action.payload;
         saveUsers(state);
