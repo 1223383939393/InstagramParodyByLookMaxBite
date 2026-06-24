@@ -1,7 +1,7 @@
+// src/pages/AuthPage.tsx
 import { useDispatch } from "react-redux";
 import { loginUser, registerUser } from "../store/usersSlice";
 import { useState } from "react";
-import type { RootState } from "../app/store"; // если не нужен, можно убрать этот импорт
 
 export default function AuthPage() {
   const dispatch = useDispatch();
@@ -224,7 +224,139 @@ export default function AuthPage() {
             onSubmit={handleRegisterSubmit}
             style={{ display: "flex", flexDirection: "column", gap: 10 }}
           >
-            {/* поля регистрации как в предыдущем ответе, без изменений */}
+            <label style={{ fontSize: 13 }}>
+              Логин
+              <input
+                type="text"
+                value={registerUsername}
+                onChange={(e) => setRegisterUsername(e.target.value)}
+                placeholder="Придумайте логин"
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                }}
+                required
+              />
+            </label>
+
+            <label style={{ fontSize: 13 }}>
+              Полное имя
+              <input
+                type="text"
+                value={registerFullName}
+                onChange={(e) => setRegisterFullName(e.target.value)}
+                placeholder="Как вас зовут"
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                }}
+                required
+              />
+            </label>
+
+            <label style={{ fontSize: 13 }}>
+              Ссылка на аватар (опционально)
+              <input
+                type="url"
+                value={registerAvatarUrl}
+                onChange={(e) => setRegisterAvatarUrl(e.target.value)}
+                placeholder="https://…"
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                }}
+              />
+            </label>
+
+            <label style={{ fontSize: 13 }}>
+              О себе (опционально)
+              <textarea
+                value={registerBio}
+                onChange={(e) => setRegisterBio(e.target.value)}
+                placeholder="Расскажите о себе"
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 16,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                  minHeight: 60,
+                  resize: "vertical",
+                }}
+              />
+            </label>
+
+            <label style={{ fontSize: 13 }}>
+              Пароль
+              <input
+                type="password"
+                value={registerPassword}
+                onChange={(e) => setRegisterPassword(e.target.value)}
+                placeholder={`Мин. ${MIN_PASSWORD_LENGTH} символов`}
+                style={{
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #374151",
+                  backgroundColor: "#020617",
+                  color: "#e5e7eb",
+                  fontSize: 13,
+                }}
+                required
+              />
+            </label>
+
+            {passwordError && (
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "#f97316",
+                  marginTop: -2,
+                }}
+              >
+                {passwordError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              style={{
+                marginTop: 4,
+                padding: 8,
+                borderRadius: 999,
+                border: "none",
+                background:
+                  "linear-gradient(135deg, #6366f1, #ec4899)",
+                color: "white",
+                cursor: "pointer",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              Зарегистрироваться
+            </button>
           </form>
         )}
       </div>
