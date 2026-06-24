@@ -17,14 +17,17 @@ export default function NewPostPage() {
   );
 
   const [caption, setCaption] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [imageUrlText, setImageUrlText] = useState("");
   const [tagsText, setTagsText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
 
   const handleImageFilesChange = (files: File[]) => {
+    setImageFiles(files);
+
     if (!files.length) {
       setImagePreviewUrls([]);
       return;
@@ -58,16 +61,45 @@ export default function NewPostPage() {
       .map((t) => t.trim())
       .filter(Boolean);
 
-    // если пользователь руками ввёл ссылку — уважаем её
-    // иначе берём все превью и склеиваем в одну строку через |||
-    const finalImageUrl =
-      imageUrl.trim() ||
-      (imagePreviewUrls.length
-        ? imagePreviewUrls.join("|||")
-        : "");
+    let finalImageUrl: string | null = null;
 
     try {
       setLoading(true);
+
+      // 1) текстовый URL — приоритет
+      if (imageUrlText.trim()) {
+        finalImageUrl = imageUrlText.trim();
+      } else if (imageFiles.length) {
+        // 2) если есть файлы — грузим их
+        const fd = new FormData();
+        imageFiles.forEach((file) => {
+          fd.append("files", file); // имя поля "files" совпадает с upload.array("files")
+        });
+
+        const uploadRes = await fetch(`${API_BASE}/api/upload-images`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: fd,
+        });
+
+        if (!uploadRes.ok) {
+          const err = await uploadRes.json().catch(() => null);
+          throw new Error(
+            err?.error || "Не удалось загрузить изображения"
+          );
+        }
+
+        const uploadJson: { urls: string[] } = await uploadRes.json();
+
+        if (!uploadJson.urls || !uploadJson.urls.length) {
+          throw new Error("Сервер не вернул URL картинок");
+        }
+
+        // склеиваем в одну строку — PostCard уже умеет это разбивать и делать коллаж
+        finalImageUrl = uploadJson.urls.join("|||");
+      }
 
       const res = await fetch(`${API_BASE}/api/posts`, {
         method: "POST",
@@ -77,7 +109,7 @@ export default function NewPostPage() {
         },
         body: JSON.stringify({
           caption: caption.trim(),
-          imageUrl: finalImageUrl || null,
+          imageUrl: finalImageUrl,
           tags,
         }),
       });
@@ -91,8 +123,9 @@ export default function NewPostPage() {
       dispatch(addPostFromServer(createdPost));
 
       setCaption("");
-      setImageUrl("");
+      setImageUrlText("");
       setTagsText("");
+      setImageFiles([]);
       setImagePreviewUrls([]);
 
       navigate("/feed");
@@ -107,13 +140,13 @@ export default function NewPostPage() {
     <div className="page">
       <NewPostForm
         caption={caption}
-        imageUrl={imageUrl}
+        imageUrl={imageUrlText}
         tagsText={tagsText}
         error={error}
         loading={loading}
         imagePreviewUrls={imagePreviewUrls}
         onCaptionChange={setCaption}
-        onImageUrlChange={setImageUrl}
+        onImageUrlChange={setImageUrlText}
         onTagsTextChange={setTagsText}
         onImageFilesChange={handleImageFilesChange}
         onSubmit={handleSubmit}
