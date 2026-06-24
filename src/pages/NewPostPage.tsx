@@ -22,11 +22,14 @@ export default function NewPostPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>(
-    []
-  );
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
 
   const handleImageFilesChange = (files: File[]) => {
+    if (!files.length) {
+      setImagePreviewUrls([]);
+      return;
+    }
+
     const urls = files.map((f) => URL.createObjectURL(f));
     setImagePreviewUrls(urls);
   };
@@ -55,9 +58,13 @@ export default function NewPostPage() {
       .map((t) => t.trim())
       .filter(Boolean);
 
+    // если пользователь руками ввёл ссылку — уважаем её
+    // иначе берём все превью и склеиваем в одну строку через |||
     const finalImageUrl =
       imageUrl.trim() ||
-      (imagePreviewUrls[0] ? imagePreviewUrls[0] : "");
+      (imagePreviewUrls.length
+        ? imagePreviewUrls.join("|||")
+        : "");
 
     try {
       setLoading(true);
