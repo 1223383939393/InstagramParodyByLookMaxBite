@@ -1,3 +1,4 @@
+// src/components/feed/PostCard.tsx
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../app/store";
 import type { Post } from "../../store/postsSlice";
@@ -49,11 +50,11 @@ export default function PostCard({ post }: Props) {
       const updatedPost: Post = await res.json();
       dispatch(updatePostFromServer(updatedPost));
     } catch {
-      // можно показать уведомление, но для учебного проекта ок
+      // тихо игнорируем для учебного проекта
     }
   };
 
-  // разбор imageUrl на массив (на будущее для коллажей)
+  // разбираем imageUrl на массив для коллажей
   const imageUrls: string[] = post.imageUrl
     ? post.imageUrl
         .split("|||")
@@ -64,40 +65,49 @@ export default function PostCard({ post }: Props) {
   const renderImages = () => {
     if (imageUrls.length === 0) return null;
 
-    // одна картинка — как раньше
+    // одна картинка — почти без кропа
     if (imageUrls.length === 1) {
       return (
-        <div className="post-card__image-wrapper">
+        <div
+          className="post-card__image-wrapper"
+          style={{
+            marginTop: 8,
+          }}
+        >
           <img
             src={imageUrls[0]}
             alt={post.caption}
             className="post-card__image"
             style={{
               width: "100%",
+              display: "block",
               borderRadius: 16,
-              objectFit: "cover",
-              maxHeight: 400,
+              // если хочешь вообще без обрезки — оставляем contain
+              objectFit: "contain",
+              maxHeight: 500,
+              backgroundColor: "#020617",
             }}
           />
         </div>
       );
     }
 
-    // 2–4 картинки — простой коллаж
+    // 2–4 картинки — аккуратный коллаж
     const urls = imageUrls.slice(0, 4);
 
     return (
       <div
         className="post-card__collage"
         style={{
+          marginTop: 8,
           display: "grid",
           gridTemplateColumns:
             urls.length === 2 ? "1fr 1fr" : "1fr 1fr",
-          gridTemplateRows:
-            urls.length <= 2 ? "auto" : "150px 150px",
           gap: 4,
           borderRadius: 16,
           overflow: "hidden",
+          // ограничение по высоте всего блока, чтобы не растягивался бесконечно
+          maxHeight: 450,
         }}
       >
         {urls.map((url, idx) => (
@@ -106,8 +116,9 @@ export default function PostCard({ post }: Props) {
             style={{
               position: "relative",
               width: "100%",
-              height: "100%",
-              minHeight: urls.length <= 2 ? 200 : 150,
+              // для 2 фоток — прямоугольники 4:3, для 3–4 — квадраты
+              aspectRatio: urls.length <= 2 ? "4 / 3" : "1 / 1",
+              backgroundColor: "#020617",
             }}
           >
             <img
@@ -116,6 +127,8 @@ export default function PostCard({ post }: Props) {
               style={{
                 width: "100%",
                 height: "100%",
+                display: "block",
+                // мягкий кроп, одинаковый для всех
                 objectFit: "cover",
               }}
             />
