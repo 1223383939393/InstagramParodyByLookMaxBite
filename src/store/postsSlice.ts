@@ -1,3 +1,4 @@
+// src/store/postsSlice.ts
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
@@ -32,12 +33,17 @@ const postsSlice = createSlice({
   name: "posts",
   initialState,
   reducers: {
+    // Полная замена списка постов с сервера (используется в FeedPage)
     setPostsFromServer(state, action: PayloadAction<Post[]>) {
       state.items = action.payload;
     },
+
+    // Добавить один пост, который пришёл с сервера после создания (используется в NewPostPage)
     addPostFromServer(state, action: PayloadAction<Post>) {
       state.items.unshift(action.payload);
     },
+
+    // Обновить пост, пришедший с сервера (например, после лайка/редактирования)
     updatePostFromServer(state, action: PayloadAction<Post>) {
       const updated = action.payload;
       const index = state.items.findIndex((p) => p.id === updated.id);
@@ -45,6 +51,8 @@ const postsSlice = createSlice({
         state.items[index] = updated;
       }
     },
+
+    // Добавить комментарий к посту
     addCommentToPost(
       state,
       action: PayloadAction<{ postId: string; comment: Comment }>
@@ -55,6 +63,8 @@ const postsSlice = createSlice({
         post.comments.push(comment);
       }
     },
+
+    // Удалить пост по id
     removePost(state, action: PayloadAction<string>) {
       const postId = action.payload;
       state.items = state.items.filter((p) => p.id !== postId);
