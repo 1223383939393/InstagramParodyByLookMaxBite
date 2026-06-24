@@ -1,20 +1,77 @@
 // src/pages/AuthPage.tsx
 import { useDispatch } from "react-redux";
-import { loginUser, registerUser } from "../store/usersSlice";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { upsertUser, setCurrentUser } from "../store/usersSlice";
+
+const API_BASE = "https://lmbq-backend.onrender.com";
+
+type ApiUser = {
+  id: string;
+  username: string;
+  email: string;
+  fullName: string;
+  avatarUrl: string | null;
+  bio: string | null;
+};
+
+type ApiAuthResponse = {
+  token: string;
+  user: ApiUser;
+};
+
+async function apiRegister(payload: {
+  username: string;
+  email: string;
+  password: string;
+  fullName?: string;
+  avatarUrl?: string;
+  bio?: string;
+}): Promise<ApiAuthResponse> {
+  const res = await fetch(`${API_BASE}/api/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.error || "Ошибка регистрации");
+  }
+  return res.json();
+}
+
+async function apiLogin(payload: {
+  emailOrUsername: string;
+  password: string;
+}): Promise<ApiAuthResponse> {
+  const res = await fetch(`${API_BASE}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.error || "Ошибка входа");
+  }
+  return res.json();
+}
 
 export default function AuthPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [registerUsername, setRegisterUsername] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
   const [registerFullName, setRegisterFullName] = useState("");
   const [registerAvatarUrl, setRegisterAvatarUrl] = useState("");
   const [registerBio, setRegisterBio] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [globalError, setGlobalError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const MIN_PASSWORD_LENGTH = 6;
 
@@ -25,341 +82,206 @@ export default function AuthPage() {
     return null;
   };
 
-  const handleLoginSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLoginSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
+    setGlobalError(null);
+
     const error = validatePassword(loginPassword);
     setPasswordError(error);
     if (error) return;
 
-    dispatch(
-      loginUser({ username: loginUsername.trim(), password: loginPassword })
-    );
+    try {
+      setLoading(true);
+      const result = await apiLogin({
+        emailOrUsername: loginUsername.trim(),
+        password: loginPassword,
+      });
+
+      localStorage.setItem("lmbq_token", result.token);
+
+      // кладём пользователя из API в Redux и делаем его текущим
+      dispatch(
+        upsertUser({
+          id: result.user.id,
+          username: result.user.username,
+          fullName: result.user.fullName,
+          avatarUrl: result.user.avatarUrl,
+          bio: result.user.bio,
+        })
+      );
+      dispatch(setCurrentUser(result.user.id));
+
+      navigate("/feed");
+    } catch (err: any) {
+      setGlobalError(err.message || "Ошибка входа");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleRegisterSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
+    setGlobalError(null);
+
     const error = validatePassword(registerPassword);
     setPasswordError(error);
     if (error) return;
 
-    const newUser = {
-      id: crypto.randomUUID(),
-      username: registerUsername.trim(),
-      fullName: registerFullName.trim(),
-      avatarUrl: registerAvatarUrl.trim() || null,
-      bio: registerBio.trim() || null,
-      password: registerPassword,
-    };
+    try {
+      setLoading(true);
+      const result = await apiRegister({
+        username: registerUsername.trim(),
+        email: registerEmail.trim() || `${registerUsername.trim()}@example.com`,
+        password: registerPassword,
+        fullName: registerFullName.trim() || registerUsername.trim(),
+        avatarUrl: registerAvatarUrl.trim() || undefined,
+        bio: registerBio.trim() || undefined,
+      });
 
-    dispatch(registerUser(newUser));
-    dispatch(
-      loginUser({ username: newUser.username, password: newUser.password })
-    );
+      localStorage.setItem("lmbq_token", result.token);
+
+      dispatch(
+        upsertUser({
+          id: result.user.id,
+          username: result.user.username,
+          fullName: result.user.fullName,
+          avatarUrl: result.user.avatarUrl,
+          bio: result.user.bio,
+        })
+      );
+      dispatch(setCurrentUser(result.user.id));
+
+      navigate("/feed");
+    } catch (err: any) {
+      setGlobalError(err.message || "Ошибка регистрации");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div
-      className="page"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "100vh",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 420,
-          padding: 24,
-          borderRadius: 16,
-          border: "1px solid #1f2937",
-          background:
-            "radial-gradient(circle at top, rgba(96,165,250,0.3), transparent 60%)",
-        }}
-      >
-        <h1 style={{ marginBottom: 8 }}>LMBQ</h1>
-        <p
-          style={{
-            marginBottom: 16,
-            fontSize: 13,
-            color: "#9ca3af",
-          }}
-        >
-          Авторизуйся, чтобы пользоваться социальной сетью LMBQ.
-        </p>
+    <div className="app-layout">
+      <aside className="sidebar">
+        <h1 className="sidebar__logo">PIXLY</h1>
+        <nav className="sidebar__nav">
+          <a className="active">Главная</a>
+          <a>Исследовать</a>
+          <a>Профиль</a>
+        </nav>
+      </aside>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            marginBottom: 16,
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => {
-              setMode("login");
-              setPasswordError(null);
-            }}
-            style={{
-              flex: 1,
-              padding: 8,
-              borderRadius: 999,
-              border: "none",
-              background:
-                mode === "login"
-                  ? "linear-gradient(135deg, #6366f1, #ec4899)"
-                  : "#111827",
-              color: "white",
-              cursor: "pointer",
-              fontSize: 13,
-            }}
+      <main className="main-content">
+        <div className="page">
+          <div
+            className="new-post-form"
+            style={{ maxWidth: 420, marginTop: 40 }}
           >
-            Вход
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMode("register");
-              setPasswordError(null);
-            }}
-            style={{
-              flex: 1,
-              padding: 8,
-              borderRadius: 999,
-              border: "none",
-              background:
-                mode === "register"
-                  ? "linear-gradient(135deg, #6366f1, #ec4899)"
-                  : "#111827",
-              color: "white",
-              cursor: "pointer",
-              fontSize: 13,
-            }}
-          >
-            Регистрация
-          </button>
+            <h2>
+              {mode === "login" ? "Вход в Pixly" : "Регистрация в Pixly"}
+            </h2>
+
+            <button
+              type="button"
+              style={{
+                marginTop: 8,
+                marginBottom: 12,
+                fontSize: 13,
+                background: "transparent",
+                border: "none",
+                color: "var(--text-muted)",
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+              onClick={() =>
+                setMode((prev) => (prev === "login" ? "register" : "login"))
+              }
+            >
+              Переключить режим (сейчас:{" "}
+              {mode === "login" ? "Вход" : "Регистрация"})
+            </button>
+
+            {globalError && (
+              <p className="auth-error-global">{globalError}</p>
+            )}
+            {passwordError && (
+              <p className="auth-error-password">{passwordError}</p>
+            )}
+
+            {mode === "login" ? (
+              <form onSubmit={handleLoginSubmit} className="auth-form">
+                <input
+                  placeholder="Логин или email"
+                  value={loginUsername}
+                  onChange={(e) => setLoginUsername(e.target.value)}
+                />
+                <input
+                  type="password"
+                  placeholder="Пароль"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                />
+                <button type="submit" disabled={loading}>
+                  Войти
+                </button>
+              </form>
+            ) : (
+              <form
+                onSubmit={handleRegisterSubmit}
+                className="auth-form"
+              >
+                <input
+                  placeholder="Логин"
+                  value={registerUsername}
+                  onChange={(e) =>
+                    setRegisterUsername(e.target.value)
+                  }
+                />
+                <input
+                  placeholder="Email"
+                  value={registerEmail}
+                  onChange={(e) =>
+                    setRegisterEmail(e.target.value)
+                  }
+                />
+                <input
+                  placeholder="Полное имя"
+                  value={registerFullName}
+                  onChange={(e) =>
+                    setRegisterFullName(e.target.value)
+                  }
+                />
+                <input
+                  placeholder="URL аватара"
+                  value={registerAvatarUrl}
+                  onChange={(e) =>
+                    setRegisterAvatarUrl(e.target.value)
+                  }
+                />
+                <input
+                  placeholder="Био"
+                  value={registerBio}
+                  onChange={(e) => setRegisterBio(e.target.value)}
+                />
+                <input
+                  type="password"
+                  placeholder="Пароль"
+                  value={registerPassword}
+                  onChange={(e) =>
+                    setRegisterPassword(e.target.value)
+                  }
+                />
+                <button type="submit" disabled={loading}>
+                  Зарегистрироваться
+                </button>
+              </form>
+            )}
+          </div>
         </div>
-
-        {mode === "login" ? (
-          <form
-            onSubmit={handleLoginSubmit}
-            style={{ display: "flex", flexDirection: "column", gap: 10 }}
-          >
-            <label style={{ fontSize: 13 }}>
-              Логин
-              <input
-                type="text"
-                value={loginUsername}
-                onChange={(e) => setLoginUsername(e.target.value)}
-                placeholder="Введите логин"
-                style={{
-                  marginTop: 4,
-                  width: "100%",
-                  padding: "8px 10px",
-                  borderRadius: 999,
-                  border: "1px solid #374151",
-                  backgroundColor: "#020617",
-                  color: "#e5e7eb",
-                  fontSize: 13,
-                }}
-                required
-              />
-            </label>
-
-            <label style={{ fontSize: 13 }}>
-              Пароль
-              <input
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder={`Мин. ${MIN_PASSWORD_LENGTH} символов`}
-                style={{
-                  marginTop: 4,
-                  width: "100%",
-                  padding: "8px 10px",
-                  borderRadius: 999,
-                  border: "1px solid #374151",
-                  backgroundColor: "#020617",
-                  color: "#e5e7eb",
-                  fontSize: 13,
-                }}
-                required
-              />
-            </label>
-
-            {passwordError && (
-              <p
-                style={{
-                  fontSize: 12,
-                  color: "#f97316",
-                  marginTop: -2,
-                }}
-              >
-                {passwordError}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              style={{
-                marginTop: 4,
-                padding: 8,
-                borderRadius: 999,
-                border: "none",
-                background:
-                  "linear-gradient(135deg, #6366f1, #ec4899)",
-                color: "white",
-                cursor: "pointer",
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              Войти
-            </button>
-          </form>
-        ) : (
-          <form
-            onSubmit={handleRegisterSubmit}
-            style={{ display: "flex", flexDirection: "column", gap: 10 }}
-          >
-            <label style={{ fontSize: 13 }}>
-              Логин
-              <input
-                type="text"
-                value={registerUsername}
-                onChange={(e) => setRegisterUsername(e.target.value)}
-                placeholder="Придумайте логин"
-                style={{
-                  marginTop: 4,
-                  width: "100%",
-                  padding: "8px 10px",
-                  borderRadius: 999,
-                  border: "1px solid #374151",
-                  backgroundColor: "#020617",
-                  color: "#e5e7eb",
-                  fontSize: 13,
-                }}
-                required
-              />
-            </label>
-
-            <label style={{ fontSize: 13 }}>
-              Полное имя
-              <input
-                type="text"
-                value={registerFullName}
-                onChange={(e) => setRegisterFullName(e.target.value)}
-                placeholder="Как вас зовут"
-                style={{
-                  marginTop: 4,
-                  width: "100%",
-                  padding: "8px 10px",
-                  borderRadius: 999,
-                  border: "1px solid #374151",
-                  backgroundColor: "#020617",
-                  color: "#e5e7eb",
-                  fontSize: 13,
-                }}
-                required
-              />
-            </label>
-
-            <label style={{ fontSize: 13 }}>
-              Ссылка на аватар (опционально)
-              <input
-                type="url"
-                value={registerAvatarUrl}
-                onChange={(e) => setRegisterAvatarUrl(e.target.value)}
-                placeholder="https://…"
-                style={{
-                  marginTop: 4,
-                  width: "100%",
-                  padding: "8px 10px",
-                  borderRadius: 999,
-                  border: "1px solid #374151",
-                  backgroundColor: "#020617",
-                  color: "#e5e7eb",
-                  fontSize: 13,
-                }}
-              />
-            </label>
-
-            <label style={{ fontSize: 13 }}>
-              О себе (опционально)
-              <textarea
-                value={registerBio}
-                onChange={(e) => setRegisterBio(e.target.value)}
-                placeholder="Расскажите о себе"
-                style={{
-                  marginTop: 4,
-                  width: "100%",
-                  padding: "8px 10px",
-                  borderRadius: 16,
-                  border: "1px solid #374151",
-                  backgroundColor: "#020617",
-                  color: "#e5e7eb",
-                  fontSize: 13,
-                  minHeight: 60,
-                  resize: "vertical",
-                }}
-              />
-            </label>
-
-            <label style={{ fontSize: 13 }}>
-              Пароль
-              <input
-                type="password"
-                value={registerPassword}
-                onChange={(e) => setRegisterPassword(e.target.value)}
-                placeholder={`Мин. ${MIN_PASSWORD_LENGTH} символов`}
-                style={{
-                  marginTop: 4,
-                  width: "100%",
-                  padding: "8px 10px",
-                  borderRadius: 999,
-                  border: "1px solid #374151",
-                  backgroundColor: "#020617",
-                  color: "#e5e7eb",
-                  fontSize: 13,
-                }}
-                required
-              />
-            </label>
-
-            {passwordError && (
-              <p
-                style={{
-                  fontSize: 12,
-                  color: "#f97316",
-                  marginTop: -2,
-                }}
-              >
-                {passwordError}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              style={{
-                marginTop: 4,
-                padding: 8,
-                borderRadius: 999,
-                border: "none",
-                background:
-                  "linear-gradient(135deg, #6366f1, #ec4899)",
-                color: "white",
-                cursor: "pointer",
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              Зарегистрироваться
-            </button>
-          </form>
-        )}
-      </div>
+      </main>
     </div>
   );
 }

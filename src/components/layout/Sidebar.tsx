@@ -43,7 +43,7 @@ export default function Sidebar() {
           cursor: "pointer",
           fontSize: 24,
           fontWeight: 700,
-          color: "#e5e7eb",            // светлый цвет текста
+          color: "#e5e7eb",
           textAlign: "left",
         }}
       >

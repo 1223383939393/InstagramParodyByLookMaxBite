@@ -1,3 +1,4 @@
+// src/store/usersSlice.ts
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
@@ -7,7 +8,7 @@ export type UserProfile = {
   fullName: string;
   avatarUrl?: string | null;
   bio?: string | null;
-  password: string;
+  password?: string; // пароль из API можно не хранить обязательно
 };
 
 export type UsersState = {
@@ -36,7 +37,6 @@ function saveUsers(state: UsersState) {
   }
 }
 
-// Стартовое состояние: никто не залогинен, пользователей нет (или можешь сюда добавить демо‑юзера)
 const defaultState: UsersState = {
   items: [],
   currentUserId: null,
@@ -49,23 +49,22 @@ const usersSlice = createSlice({
   name: "users",
   initialState,
   reducers: {
-    registerUser(state, action: PayloadAction<UserProfile>) {
-      state.items.push(action.payload);
+    // регистрируем/обновляем пользователя из бекенда
+    upsertUser(state, action: PayloadAction<UserProfile>) {
+      const user = action.payload;
+      const idx = state.items.findIndex((u) => u.id === user.id);
+      if (idx === -1) {
+        state.items.push(user);
+      } else {
+        state.items[idx] = user;
+      }
       saveUsers(state);
     },
-    loginUser(
-      state,
-      action: PayloadAction<{ username: string; password: string }>
-    ) {
-      const { username, password } = action.payload;
-      const found = state.items.find(
-        (u) => u.username === username && u.password === password
-      );
-      if (found) {
-        state.currentUserId = found.id;
-        state.isAuthenticated = true;
-        saveUsers(state);
-      }
+    // логин по id пользователя (из API)
+    setCurrentUser(state, action: PayloadAction<string>) {
+      state.currentUserId = action.payload;
+      state.isAuthenticated = true;
+      saveUsers(state);
     },
     logout(state) {
       state.currentUserId = null;
@@ -82,6 +81,6 @@ const usersSlice = createSlice({
   },
 });
 
-export const { registerUser, loginUser, logout, updateProfile } =
+export const { upsertUser, setCurrentUser, logout, updateProfile } =
   usersSlice.actions;
 export default usersSlice.reducer;

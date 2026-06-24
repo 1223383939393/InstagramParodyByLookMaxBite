@@ -1,118 +1,73 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import type { RootState } from "../app/store";
+
+export type Comment = {
+  id: string;
+  authorId: string;
+  text: string;
+  createdAt: string;
+};
 
 export type Post = {
   id: string;
   authorId: string;
   caption: string;
-  imageUrl?: string;           // картинка теперь опциональна
+  imageUrl: string | null;
   tags: string[];
   likes: number;
   likedByUserIds: string[];
   createdAt: string;
+  comments: Comment[];
 };
 
 export type PostsState = {
   items: Post[];
-  search: string;
-  tagFilter: string | null;
-  sortBy: "new" | "top";
 };
 
-const POSTS_STORAGE_KEY = "lmbq_posts";
-
-function loadPosts(): PostsState | null {
-  try {
-    const raw = localStorage.getItem(POSTS_STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as PostsState;
-  } catch {
-    return null;
-  }
-}
-
-function savePosts(state: PostsState) {
-  try {
-    localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // игнорируем ошибки
-  }
-}
-
-const defaultState: PostsState = {
+const initialState: PostsState = {
   items: [],
-  search: "",
-  tagFilter: null,
-  sortBy: "new",
 };
-
-const initialState: PostsState = loadPosts() ?? defaultState;
 
 const postsSlice = createSlice({
   name: "posts",
   initialState,
   reducers: {
-    addPost(
-      state,
-      action: PayloadAction<{
-        id: string;
-        authorId: string;
-        caption: string;
-        imageUrl?: string;
-        tags: string[];
-      }>
-    ) {
-      const now = new Date().toISOString();
-      const newPost: Post = {
-        id: action.payload.id,
-        authorId: action.payload.authorId,
-        caption: action.payload.caption,
-        imageUrl: action.payload.imageUrl,
-        tags: action.payload.tags,
-        likes: 0,
-        likedByUserIds: [],
-        createdAt: now,
-      };
-
-      state.items.unshift(newPost);
-      savePosts(state);
+    setPostsFromServer(state, action: PayloadAction<Post[]>) {
+      state.items = action.payload;
     },
-    likePost(
-      state,
-      action: PayloadAction<{ postId: string; userId: string }>
-    ) {
-      const { postId, userId } = action.payload;
-      const post = state.items.find((p) => p.id === postId);
-      if (!post) return;
-
-      const alreadyLiked = post.likedByUserIds.includes(userId);
-      if (alreadyLiked) {
-        post.likedByUserIds = post.likedByUserIds.filter(
-          (id) => id !== userId
-        );
-        post.likes = Math.max(0, post.likes - 1);
-      } else {
-        post.likedByUserIds.push(userId);
-        post.likes += 1;
+    addPostFromServer(state, action: PayloadAction<Post>) {
+      state.items.unshift(action.payload);
+    },
+    updatePostFromServer(state, action: PayloadAction<Post>) {
+      const updated = action.payload;
+      const index = state.items.findIndex((p) => p.id === updated.id);
+      if (index !== -1) {
+        state.items[index] = updated;
       }
-
-      savePosts(state);
     },
-    setSearch(state, action: PayloadAction<string>) {
-      state.search = action.payload;
+    addCommentToPost(
+      state,
+      action: PayloadAction<{ postId: string; comment: Comment }>
+    ) {
+      const { postId, comment } = action.payload;
+      const post = state.items.find((p) => p.id === postId);
+      if (post) {
+        post.comments.push(comment);
+      }
     },
-    setTagFilter(state, action: PayloadAction<string | null>) {
-      state.tagFilter = action.payload;
-    },
-    setSortBy(state, action: PayloadAction<"new" | "top">) {
-      state.sortBy = action.payload;
+    removePost(state, action: PayloadAction<string>) {
+      const postId = action.payload;
+      state.items = state.items.filter((p) => p.id !== postId);
     },
   },
 });
 
-export const { addPost, likePost, setSearch, setTagFilter, setSortBy } =
-  postsSlice.actions;
-export default postsSlice.reducer;
+export const {
+  setPostsFromServer,
+  addPostFromServer,
+  updatePostFromServer,
+  addCommentToPost,
+  removePost,
+} = postsSlice.actions;
 
-export const selectPosts = (state: RootState) => state.posts.items;
+export default postsSlice.reducer;

@@ -28,7 +28,15 @@ export default function ProfilePage() {
   const [isAvatarOpen, setIsAvatarOpen] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
 
-  if (!profile) return null;
+  if (!profile) {
+    return (
+      <div className="page">
+        <p style={{ color: "#9ca3af" }}>
+          Профиль не найден.
+        </p>
+      </div>
+    );
+  }
 
   const handleAvatarFile = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,37 +74,23 @@ export default function ProfilePage() {
       : DEFAULT_AVATAR;
 
   return (
-    <div
-      className="page profile-page"
-      style={{
-        paddingLeft: 32,
-        paddingRight: 24,
-        paddingTop: 24,
-      }}
-    >
-      <header
-        className="profile-header"
-        style={{ display: "flex", gap: 16, marginBottom: 24 }}
-      >
+    <div className="page">
+      {/* шапка профиля */}
+      <header className="profile-header">
         <img
           src={avatarSrc}
           alt={profile.username}
           className="profile-avatar"
           onClick={() => setIsAvatarOpen(true)}
-          style={{
-            cursor: "pointer",
-            width: 72,
-            height: 72,
-            borderRadius: "999px",
-            objectFit: "cover",
-            border: "1px solid #1f2937",
-          }}
+          style={{ cursor: "pointer" }}
           onError={() => setAvatarError(true)}
         />
         <div>
           <h2 style={{ marginBottom: 4 }}>{profile.username}</h2>
           <p style={{ marginBottom: 2 }}>{profile.fullName}</p>
-          <p style={{ marginBottom: 4, fontSize: 13 }}>{profile.bio}</p>
+          <p style={{ marginBottom: 4, fontSize: 13 }}>
+            {profile.bio}
+          </p>
           <p
             style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}
           >
@@ -122,11 +116,16 @@ export default function ProfilePage() {
         </div>
       </header>
 
+      {/* форма редактирования профиля */}
       {isEditing && (
         <section style={{ marginBottom: 24 }}>
           <form
             onSubmit={handleProfileSubmit}
-            style={{ display: "flex", flexDirection: "column", gap: 10 }}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
           >
             <label style={{ fontSize: 13 }}>
               Никнейм
@@ -246,6 +245,7 @@ export default function ProfilePage() {
         </section>
       )}
 
+      {/* посты пользователя */}
       <section className="profile-posts">
         <h3 style={{ marginBottom: 12 }}>Посты</h3>
         <div className="post-list">
@@ -255,6 +255,7 @@ export default function ProfilePage() {
         </div>
       </section>
 
+      {/* полноэкранный просмотр аватара */}
       {isAvatarOpen && (
         <div
           style={{
@@ -274,7 +275,7 @@ export default function ProfilePage() {
             style={{
               maxWidth: "80vw",
               maxHeight: "80vh",
-              borderRadius: "16px",
+              borderRadius: 16,
               border: "1px solid #374151",
               objectFit: "contain",
             }}

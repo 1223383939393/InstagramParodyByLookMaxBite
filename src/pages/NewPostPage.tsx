@@ -1,181 +1,107 @@
-import { useDispatch, useSelector } from "react-redux";
+// src/pages/NewPostPage.tsx
 import { useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
-import { addPost } from "../store/postsSlice";
-import type { RootState } from "../app/store";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { addPostFromServer } from "../store/postsSlice";
+import type { Post } from "../store/postsSlice";
+
+const API_BASE = "https://lmbq-backend.onrender.com";
 
 export default function NewPostPage() {
+  const [caption, setCaption] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [tagsText, setTagsText] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const currentUserId = useSelector(
-    (state: RootState) => state.users.currentUserId
-  );
-
-  const [caption, setCaption] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [tagsInput, setTagsInput] = useState("");
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
-
-  if (!currentUserId) return null;
-
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setFileUrl(url);
-  };
-
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError(null);
 
-    const tags =
-      tagsInput
-        .split("#")
-        .map((t) => t.trim())
-        .filter(Boolean) ?? [];
+    const token = localStorage.getItem("lmbq_token");
+    if (!token) {
+      setError("Вы не авторизованы");
+      return;
+    }
 
-    const trimmedImageUrl = imageUrl.trim();
-    const finalImageUrl =
-      fileUrl ?? (trimmedImageUrl.length > 0 ? trimmedImageUrl : undefined);
+    const tags = tagsText
+      .split(",")
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
 
-    dispatch(
-      addPost({
-        id: crypto.randomUUID(),
-        authorId: currentUserId,
-        caption: caption.trim(),
-        imageUrl: finalImageUrl, // тип: string | undefined, совпадает с imageUrl?: string
-        tags,
-      })
-    );
+    try {
+      setLoading(true);
 
-    setCaption("");
-    setImageUrl("");
-    setTagsInput("");
-    setFileUrl(null);
+      const res = await fetch(`${API_BASE}/api/posts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          caption: caption.trim(),
+          imageUrl: imageUrl.trim() || null,
+          tags,
+        }),
+      });
 
-    navigate("/feed");
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.error || "Не удалось создать пост");
+      }
+
+      const createdPost: Post = await res.json();
+
+      dispatch(addPostFromServer(createdPost));
+      navigate("/feed");
+    } catch (err: any) {
+      setError(err.message || "Ошибка создания поста");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div
-      className="page"
-      style={{
-        paddingLeft: 82,
-        paddingRight: 24,
-        paddingTop: 24,
-      }}
-    >
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-        }}
-      >
-        <h2 style={{ marginBottom: 4 }}>Новый пост</h2>
+    <div className="page">
+      <div className="new-post-form">
+        <h1>Новый пост</h1>
 
-        <label style={{ fontSize: 13 }}>
-          Описание
-          <textarea
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="Напишите текст поста"
-            style={{
-              marginTop: 4,
-              width: "100%",
-              padding: "8px 10px",
-              borderRadius: 16,
-              border: "1px solid #374151",
-              backgroundColor: "#020617",
-              color: "#e5e7eb",
-              fontSize: 13,
-              minHeight: 60,
-              resize: "vertical",
-            }}
-            required
-          />
-        </label>
+        {error && (
+          <p style={{ color: "#ff6b6b", fontSize: 13, marginTop: 8 }}>
+            {error}
+          </p>
+        )}
 
-        <label style={{ fontSize: 13 }}>
-          Ссылка на изображение (опционально)
-          <input
-            type="url"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="https://…"
-            style={{
-              marginTop: 4,
-              width: "100%",
-              padding: "8px 10px",
-              borderRadius: 999,
-              border: "1px solid #374151",
-              backgroundColor: "#020617",
-              color: "#e5e7eb",
-              fontSize: 13,
-            }}
-          />
-        </label>
-
-        <label style={{ fontSize: 13 }}>
-          Загрузить файл (опционально)
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            style={{
-              marginTop: 4,
-              width: "100%",
-              padding: "6px 10px",
-              borderRadius: 999,
-              border: "1px solid #374151",
-              backgroundColor: "#020617",
-              color: "#e5e7eb",
-              fontSize: 13,
-            }}
-          />
-        </label>
-
-        <label style={{ fontSize: 13 }}>
-          Теги (например: #music #travel)
+        <form onSubmit={handleSubmit}>
           <input
             type="text"
-            value={tagsInput}
-            onChange={(e) => setTagsInput(e.target.value)}
-            placeholder="#tag1 #tag2"
-            style={{
-              marginTop: 4,
-              width: "100%",
-              padding: "8px 10px",
-              borderRadius: 999,
-              border: "1px solid #374151",
-              backgroundColor: "#020617",
-              color: "#e5e7eb",
-              fontSize: 13,
-            }}
+            placeholder="Ссылка на картинку (можно оставить пустой)"
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
           />
-        </label>
 
-        <button
-          type="submit"
-          style={{
-            marginTop: 4,
-            padding: 8,
-            borderRadius: 999,
-            border: "none",
-            background:
-              "linear-gradient(135deg, #6366f1, #ec4899)",
-            color: "white",
-            cursor: "pointer",
-            fontSize: 13,
-            fontWeight: 600,
-          }}
-        >
-          Опубликовать пост
-        </button>
-      </form>
+          <textarea
+            className="new-post-caption"
+            placeholder="Подпись к посту"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+          />
+
+          <input
+            type="text"
+            placeholder="Теги через запятую (например: travel, summer)"
+            value={tagsText}
+            onChange={(e) => setTagsText(e.target.value)}
+          />
+
+          <button type="submit" disabled={loading}>
+            {loading ? "Создаём..." : "Создать пост"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
